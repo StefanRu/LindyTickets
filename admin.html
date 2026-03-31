@@ -86,9 +86,11 @@ textarea{height:130px;font-family:monospace;font-size:.82rem}
       </div>
       <label>Lieu</label><input type="text" id="ee-loc">
       <label>Description</label><textarea id="ee-desc" style="height:60px"></textarea>
-      <label>Logo</label>
-      <div style="display:flex;gap:8px;align-items:flex-end;margin-top:4px">
-        <input type="file" id="ee-logo-file" accept="image/*" style="flex:1">
+      <label>Logo (URL de l'image)</label>
+      <input type="text" id="ee-logo-url" placeholder="https://example.com/logo.png">
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+        <span style="font-size:.78rem;color:var(--mut)">ou uploader :</span>
+        <input type="file" id="ee-logo-file" accept="image/*" style="flex:1;font-size:.8rem">
         <button class="btn bp btn-s" onclick="uploadLogo()">Envoyer</button>
       </div>
       <div id="ee-logo-preview" style="margin-top:6px"></div>
@@ -228,6 +230,7 @@ function toggleEdit() {
       document.getElementById('ee-date').value = e.event_date||'';
       document.getElementById('ee-loc').value = e.location||'';
       document.getElementById('ee-desc').value = e.description||'';
+      document.getElementById('ee-logo-url').value = e.logo_url||'';
       var pv = document.getElementById('ee-logo-preview');
       pv.innerHTML = e.logo_url ? '<img src="'+esc(e.logo_url)+'" style="max-height:60px;border-radius:6px">' : '<span style="color:var(--mut);font-size:.82rem">Aucun logo</span>';
     });
@@ -240,6 +243,7 @@ function saveEv() {
     event_date:document.getElementById('ee-date').value,
     location:document.getElementById('ee-loc').value,
     description:document.getElementById('ee-desc').value,
+    logo_url:document.getElementById('ee-logo-url').value,
   }).then(d => { msg('ee-msg',d.error?'er':'ok',d.error||'OK'); reloadEvents(); });
 }
 function uploadLogo() {
@@ -251,7 +255,8 @@ function uploadLogo() {
   fd.append('password', pw);
   fetch(A+'?action=upload_logo', {method:'POST', body:fd}).then(function(r){return r.json();}).then(function(d){
     if (d.error) { msg('ee-msg','er',d.error); return; }
-    msg('ee-msg','ok','Logo envoye');
+    msg('ee-msg','ok','Logo envoye — cliquez Enregistrer');
+    document.getElementById('ee-logo-url').value = d.logo_url;
     document.getElementById('ee-logo-preview').innerHTML = '<img src="'+d.logo_url+'" style="max-height:60px;border-radius:6px">';
   });
 }

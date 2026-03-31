@@ -289,7 +289,7 @@ function route(PDO $db, string $action): void {
         $path = $dir . '/' . $filename;
         move_uploaded_file($_FILES['logo']['tmp_name'], $path);
 
-        $url = 'uploads/' . $filename;
+        $url = SITE_URL . '/uploads/' . $filename;
         $db->prepare("UPDATE events SET logo_url=? WHERE id=?")->execute([$url, $eid]);
         wlog('INFO', "Logo uploaded for event $eid: $url");
         sendJson(['status' => 'ok', 'logo_url' => $url]);
