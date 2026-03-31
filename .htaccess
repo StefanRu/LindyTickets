@@ -1,4 +1,4 @@
-<FilesMatch "^(config\.php|schema\.sql|install\.php|debug\.log|ticket_template\.php|log_template\.php)$">
+<FilesMatch "^(config\.php|schema\.sql|install\.php|upgrade\.php|debug\.log|ticket_template\.php|log_template\.php)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

@@ -102,8 +102,8 @@ function route(PDO $db, string $action): void {
         $b = getBody();
         $name = trim($b['name'] ?? '');
         if ($name === '') sendJson(['error' => 'Nom requis'], 400);
-        $st = $db->prepare("INSERT INTO events (name, event_date, location) VALUES (?, ?, ?)");
-        $st->execute([$name, trim($b['event_date'] ?? ''), trim($b['location'] ?? '')]);
+        $st = $db->prepare("INSERT INTO events (name, event_date, location, description, logo_url) VALUES (?, ?, ?, ?, ?)");
+        $st->execute([$name, trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), trim($b['description'] ?? ''), trim($b['logo_url'] ?? '')]);
         $id = (int)$db->lastInsertId();
         wlog('INFO', "Event created #$id: $name");
         sendJson(['status' => 'ok', 'event_id' => $id]);
@@ -113,8 +113,8 @@ function route(PDO $db, string $action): void {
         $b = getBody();
         $eid = (int)($b['event_id'] ?? 0);
         if (!$eid) sendJson(['error' => 'event_id requis'], 400);
-        $st = $db->prepare("UPDATE events SET name=?, event_date=?, location=? WHERE id=?");
-        $st->execute([trim($b['name'] ?? ''), trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), $eid]);
+        $st = $db->prepare("UPDATE events SET name=?, event_date=?, location=?, description=?, logo_url=? WHERE id=?");
+        $st->execute([trim($b['name'] ?? ''), trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), trim($b['description'] ?? ''), trim($b['logo_url'] ?? ''), $eid]);
         wlog('INFO', "Event updated #$eid");
         sendJson(['status' => 'ok']);
 
@@ -269,6 +269,30 @@ function route(PDO $db, string $action): void {
         $st->execute([$code, $eid]);
         wlog('INFO', "Deleted ticket $code");
         sendJson(['status' => 'ok', 'deleted' => $st->rowCount()]);
+
+    // ── LOGO UPLOAD ─────────────────────────────────────────
+
+    case 'upload_logo':
+        if (($_POST['password'] ?? '') !== ADMIN_PASSWORD) sendJson(['error' => 'Mot de passe incorrect'], 403);
+        $eid = (int)($_POST['event_id'] ?? 0);
+        if (!$eid) sendJson(['error' => 'event_id requis'], 400);
+        if (!isset($_FILES['logo']) || $_FILES['logo']['error'] !== UPLOAD_ERR_OK) sendJson(['error' => 'Fichier manquant'], 400);
+
+        $allowed = ['image/png','image/jpeg','image/gif','image/webp','image/svg+xml'];
+        $mime = mime_content_type($_FILES['logo']['tmp_name']);
+        if (!in_array($mime, $allowed)) sendJson(['error' => 'Format non supporte (png/jpg/gif/webp/svg)'], 400);
+
+        $ext = match($mime) { 'image/png'=>'png','image/jpeg'=>'jpg','image/gif'=>'gif','image/webp'=>'webp','image/svg+xml'=>'svg', default=>'png' };
+        $dir = __DIR__ . '/uploads';
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $filename = 'logo_' . $eid . '_' . time() . '.' . $ext;
+        $path = $dir . '/' . $filename;
+        move_uploaded_file($_FILES['logo']['tmp_name'], $path);
+
+        $url = 'uploads/' . $filename;
+        $db->prepare("UPDATE events SET logo_url=? WHERE id=?")->execute([$url, $eid]);
+        wlog('INFO', "Logo uploaded for event $eid: $url");
+        sendJson(['status' => 'ok', 'logo_url' => $url]);
 
     // ── EXPORT CSV ──────────────────────────────────────────
 

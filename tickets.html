@@ -3,30 +3,54 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tickets</title>
+<title>Tous les Tickets</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:#f0f2f5}
-.bar{background:#2c3e50;color:#fff;padding:14px 20px;text-align:center;position:sticky;top:0;z-index:10}
+body{font-family:Georgia,'Times New Roman',serif;background:#f5f0e6}
+.bar{background:#1a1a1a;color:#fff;padding:14px 20px;text-align:center;position:sticky;top:0;z-index:10;font-family:system-ui,sans-serif}
 .bar h1{font-size:1rem;margin-bottom:6px}
-.bar button{background:#3498db;color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:.88rem;cursor:pointer;margin:3px}
+.bar button{background:#c0392b;color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:.88rem;cursor:pointer;margin:3px}
 .bar a{color:#fff;opacity:.7;font-size:.82rem;text-decoration:none;display:block;margin-top:6px}
-#info{font-size:.82rem;margin-top:4px;opacity:.8}
+#info{font-size:.82rem;margin-top:4px;opacity:.8;font-family:system-ui}
 .wrap{padding:16px;display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
-.tk{width:420px;height:190px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);overflow:hidden;position:relative;page-break-inside:avoid}
-.tk-band{background:linear-gradient(135deg,#2c3e50,#34495e);padding:14px;text-align:center;color:#fff}
-.tk-band .en{font-size:15px;font-weight:700}.tk-band .es{font-size:10px;opacity:.7;margin-top:2px}
-.tk-acc{height:3px;background:linear-gradient(90deg,#3498db,#2ecc71,#e67e22)}
-.tk-body{display:flex;padding:14px 16px;align-items:center;gap:16px;height:calc(190px - 50px)}
-.tk-info{flex:1}.tk-name{font-size:16px;font-weight:700;color:#2c3e50}
-.tk-sub{font-size:11px;color:#888;margin-top:3px}
-.tk-qr{text-align:center;flex-shrink:0}
+
+/* Ticket card - retro */
+.tk{
+    width:430px;background:#FFF8E7;border-radius:4px;
+    box-shadow:0 2px 10px rgba(0,0,0,.1);overflow:hidden;
+    position:relative;border:2px solid #D4A017;
+    page-break-inside:avoid;
+}
+.tk::before,.tk::after{content:'★';position:absolute;color:#D4A017;font-size:10px;z-index:2}
+.tk::before{top:6px;left:8px}.tk::after{top:6px;right:8px}
+
+.tk-band{background:#1a1a2e;padding:12px 14px;text-align:center;color:#fff}
+.tk-band .logo{max-height:30px;max-width:120px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto}
+.tk-band .en{font-size:15px;font-weight:700;letter-spacing:.5px}
+.tk-band .es{font-size:9px;opacity:.7;margin-top:2px;font-family:system-ui}
+.tk-band .ed{font-size:8px;opacity:.6;margin-top:3px;font-style:italic;font-family:system-ui;line-height:1.3}
+.tk-acc{height:3px;background:linear-gradient(90deg,#8B0000,#D4A017 30%,#D4A017 70%,#8B0000)}
+.tk-stars{text-align:center;color:#D4A017;font-size:8px;letter-spacing:6px;padding:4px 0 0}
+
+.tk-body{display:flex;padding:10px 14px 8px;align-items:center;gap:12px}
+.tk-info{flex:1}
+.tk-name{font-size:15px;font-weight:700;color:#1a1a2e}
+.tk-sub{font-size:10px;color:#8B0000;margin-top:2px;font-weight:600}
+
+.tk-qr{text-align:center;flex-shrink:0;width:90px}
 .tk-qr canvas{display:block;margin:0 auto}
-.tk-qr img{display:none!important}
-.tk-code{font-family:monospace;font-size:8px;color:#bbb;margin-top:3px;text-align:center}
-.tk-foot{position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:7px;color:#ccc}
-@media print{.bar{display:none!important}body{background:#fff}.wrap{padding:0;gap:8px}.tk{box-shadow:none;border:1px solid #ddd;break-inside:avoid}}
+/* Do NOT hide img globally - JS will clean duplicates */
+.tk-code{font-family:monospace;font-size:7px;color:#bbb;margin-top:2px;text-align:center}
+
+.tk-foot{text-align:center;font-size:7px;color:#ccc;padding:5px;border-top:1px dashed #D4A017;font-family:system-ui}
+
+@media print{
+    .bar{display:none!important}
+    body{background:#fff}
+    .wrap{padding:0;gap:8px}
+    .tk{box-shadow:none;break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -37,9 +61,10 @@ body{font-family:system-ui,sans-serif;background:#f0f2f5}
   <div id="info">Chargement...</div>
   <a href="admin.html">Admin</a>
 </div>
-<div class="wrap" id="wrap"><div style="padding:40px;color:#888">Chargement...</div></div>
+<div class="wrap" id="wrap"><div style="padding:40px;color:#888;font-family:system-ui">Chargement...</div></div>
 <script>
 var A='api.php',eid=new URLSearchParams(location.search).get('event_id')||1;
+
 function load(){
   Promise.all([
     fetch(A+'?action=event&event_id='+eid).then(function(r){return r.json();}),
@@ -47,17 +72,45 @@ function load(){
   ]).then(function(res){
     var ev=res[0],gs=res[1],w=document.getElementById('wrap');
     w.innerHTML='';
-    if(!gs.length){w.innerHTML='<div style="padding:40px;color:#888">Aucun ticket.</div>';document.getElementById('info').textContent='0';return;}
+    if(!gs.length){w.innerHTML='<div style="padding:40px;color:#888;font-family:system-ui">Aucun ticket.</div>';document.getElementById('info').textContent='0';return;}
     document.getElementById('info').textContent=gs.length+' tickets — '+esc(ev.name||'');
-    var name=ev.name||'Evenement',sub=[ev.event_date,ev.location].filter(Boolean).join('  —  ');
-    gs.forEach(function(g){
+    var name=ev.name||'Evenement';
+    var sub=[ev.event_date,ev.location].filter(Boolean).join('  —  ');
+    var desc=ev.description||'';
+    var logo=ev.logo_url||'';
+
+    gs.forEach(function(g,idx){
       var d=document.createElement('div');d.className='tk';
-      d.innerHTML='<div class="tk-band"><div class="en">'+esc(name)+'</div>'+(sub?'<div class="es">'+esc(sub)+'</div>':'')+'</div>'
-        +'<div class="tk-acc"></div><div class="tk-body"><div class="tk-info"><div class="tk-name">'+esc(g.prenom)+' '+esc(g.nom)+'</div><div class="tk-sub">Ticket '+esc(g.ticket_label)+'</div></div>'
-        +'<div class="tk-qr"><div id="q-'+g.ticket_code+'"></div><div class="tk-code">'+g.ticket_code+'</div></div></div>'
-        +'<div class="tk-foot">1 ticket = 1 entree</div>';
+      var logoHtml=logo?'<img class="logo" src="'+esc(logo)+'" alt="">':'';
+      var descHtml=desc?'<div class="ed">'+esc(desc)+'</div>':'';
+      var qrId='qr'+idx;
+      d.innerHTML=
+        '<div class="tk-band">'+logoHtml+'<div class="en">'+esc(name)+'</div>'
+        +(sub?'<div class="es">'+esc(sub)+'</div>':'')
+        +descHtml+'</div>'
+        +'<div class="tk-acc"></div>'
+        +'<div class="tk-stars">★ ★ ★ ★ ★</div>'
+        +'<div class="tk-body">'
+        +'<div class="tk-info"><div class="tk-name">'+esc(g.prenom)+' '+esc(g.nom)+'</div><div class="tk-sub">Ticket '+esc(g.ticket_label)+'</div></div>'
+        +'<div class="tk-qr"><div id="'+qrId+'"></div><div class="tk-code">'+g.ticket_code+'</div></div>'
+        +'</div>'
+        +'<div class="tk-foot">★ 1 ticket = 1 entree ★</div>';
       w.appendChild(d);
-      new QRCode(document.getElementById('q-'+g.ticket_code),{text:g.ticket_code,width:85,height:85,colorDark:'#2c3e50',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+
+      new QRCode(document.getElementById(qrId),{
+        text:g.ticket_code, width:80, height:80,
+        colorDark:'#1a1a2e', colorLight:'#FFF8E7',
+        correctLevel:QRCode.CorrectLevel.M
+      });
+      // Fix: remove duplicate img if canvas exists
+      setTimeout(function(){
+        var el=document.getElementById(qrId);
+        if(el){
+          var c=el.querySelector('canvas');
+          var im=el.querySelector('img');
+          if(c && im) im.remove();
+        }
+      }, 100);
     });
   });
 }

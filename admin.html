@@ -74,6 +74,7 @@ textarea{height:130px;font-family:monospace;font-size:.82rem}
         <div><label>Date</label><input type="text" id="ce-date" placeholder="15/06/2026"></div>
       </div>
       <label>Lieu</label><input type="text" id="ce-loc" placeholder="Salle des Fetes">
+      <label>Description</label><textarea id="ce-desc" style="height:60px" placeholder="Stage de Lindy Hop pour tous niveaux..."></textarea>
       <button class="btn bs btn-s" onclick="createEv()">Creer</button>
       <button class="btn bo btn-s" onclick="hideCreate()">Annuler</button>
     </div>
@@ -84,8 +85,17 @@ textarea{height:130px;font-family:monospace;font-size:.82rem}
         <div><label>Date</label><input type="text" id="ee-date"></div>
       </div>
       <label>Lieu</label><input type="text" id="ee-loc">
-      <button class="btn bp btn-s" onclick="saveEv()">Enregistrer</button>
-      <button class="btn bd btn-s" onclick="delEv()">Supprimer</button>
+      <label>Description</label><textarea id="ee-desc" style="height:60px"></textarea>
+      <label>Logo</label>
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-top:4px">
+        <input type="file" id="ee-logo-file" accept="image/*" style="flex:1">
+        <button class="btn bp btn-s" onclick="uploadLogo()">Envoyer</button>
+      </div>
+      <div id="ee-logo-preview" style="margin-top:6px"></div>
+      <div style="margin-top:8px">
+        <button class="btn bp btn-s" onclick="saveEv()">Enregistrer</button>
+        <button class="btn bd btn-s" onclick="delEv()">Supprimer</button>
+      </div>
       <div class="msg" id="ee-msg"></div>
     </div>
     <div style="margin-top:6px"><a href="#" style="font-size:.8rem;color:var(--acc)" onclick="toggleEdit();return false">Modifier cet evenement</a></div>
@@ -203,6 +213,7 @@ function createEv() {
     name: document.getElementById('ce-name').value,
     event_date: document.getElementById('ce-date').value,
     location: document.getElementById('ce-loc').value,
+    description: document.getElementById('ce-desc').value,
   }).then(d => {
     if (d.error) return alert(d.error);
     evId = d.event_id; hideCreate(); reloadEvents();
@@ -216,6 +227,9 @@ function toggleEdit() {
       document.getElementById('ee-name').value = e.name||'';
       document.getElementById('ee-date').value = e.event_date||'';
       document.getElementById('ee-loc').value = e.location||'';
+      document.getElementById('ee-desc').value = e.description||'';
+      var pv = document.getElementById('ee-logo-preview');
+      pv.innerHTML = e.logo_url ? '<img src="'+esc(e.logo_url)+'" style="max-height:60px;border-radius:6px">' : '<span style="color:var(--mut);font-size:.82rem">Aucun logo</span>';
     });
   }
 }
@@ -225,7 +239,21 @@ function saveEv() {
     name:document.getElementById('ee-name').value,
     event_date:document.getElementById('ee-date').value,
     location:document.getElementById('ee-loc').value,
+    description:document.getElementById('ee-desc').value,
   }).then(d => { msg('ee-msg',d.error?'er':'ok',d.error||'OK'); reloadEvents(); });
+}
+function uploadLogo() {
+  var file = document.getElementById('ee-logo-file').files[0];
+  if (!file) { msg('ee-msg','er','Selectionnez un fichier'); return; }
+  var fd = new FormData();
+  fd.append('logo', file);
+  fd.append('event_id', evId);
+  fd.append('password', pw);
+  fetch(A+'?action=upload_logo', {method:'POST', body:fd}).then(function(r){return r.json();}).then(function(d){
+    if (d.error) { msg('ee-msg','er',d.error); return; }
+    msg('ee-msg','ok','Logo envoye');
+    document.getElementById('ee-logo-preview').innerHTML = '<img src="'+d.logo_url+'" style="max-height:60px;border-radius:6px">';
+  });
 }
 function delEv() {
   if(!confirm('Supprimer cet evenement et tous ses tickets ?'))return;

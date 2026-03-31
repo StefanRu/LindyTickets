@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS `events` (
     `name` VARCHAR(255) NOT NULL,
     `event_date` VARCHAR(100) DEFAULT '',
     `location` VARCHAR(255) DEFAULT '',
+    `description` TEXT DEFAULT NULL,
+    `logo_url` VARCHAR(500) DEFAULT '',
     `archived` TINYINT(1) NOT NULL DEFAULT 0,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
