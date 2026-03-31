@@ -107,8 +107,6 @@ body {
 }
 
 .qr-box { text-align: center; flex-shrink: 0; }
-.qr-box canvas { display: block !important; }
-.qr-box img { display: none !important; }
 .qr-code {
     font-family: 'Courier New', monospace; font-size: 8px;
     color: #bbb; margin-top: 4px; letter-spacing: 1px;

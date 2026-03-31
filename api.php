@@ -317,7 +317,7 @@ function route(PDO $db, string $action): void {
     case 'ticket_pdf':
         $code = strtoupper(trim($_GET['code'] ?? ''));
         if (!$code) { http_response_code(400); echo 'Code manquant'; exit; }
-        $st = $db->prepare("SELECT t.*,e.name AS event_name,e.event_date,e.location FROM tickets t JOIN events e ON t.event_id=e.id WHERE t.ticket_code=?");
+        $st = $db->prepare("SELECT t.*,e.name AS event_name,e.event_date,e.location,e.description,e.logo_url FROM tickets t JOIN events e ON t.event_id=e.id WHERE t.ticket_code=?");
         $st->execute([$code]);
         $tk = $st->fetch();
         if (!$tk) { http_response_code(404); echo 'Ticket introuvable'; exit; }

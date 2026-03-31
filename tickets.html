@@ -102,15 +102,6 @@ function load(){
         colorDark:'#1a1a2e', colorLight:'#FFF8E7',
         correctLevel:QRCode.CorrectLevel.M
       });
-      // Fix: remove duplicate img if canvas exists
-      setTimeout(function(){
-        var el=document.getElementById(qrId);
-        if(el){
-          var c=el.querySelector('canvas');
-          var im=el.querySelector('img');
-          if(c && im) im.remove();
-        }
-      }, 100);
     });
   });
 }
