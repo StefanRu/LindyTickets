@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Lindy Tickets</title>
+<style>
+  :root { --primary: #1a1a2e; --accent: #e94560; --success: #27ae60; --bg: #f0f2f5; --card: #fff; --text: #333; --muted: #888; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--primary); color: #fff; padding: 16px 20px; text-align: center; }
+  header h1 { font-size: 1.2rem; }
+  header a { color: #fff; opacity: 0.7; font-size: 0.85rem; text-decoration: none; }
+  .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+  .card { background: var(--card); border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 1.05rem; margin-bottom: 12px; color: var(--primary); }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; margin-top: 12px; }
+  input[type=text], input[type=password], input[type=file] {
+    width: 100%; padding: 10px 14px; border: 1px solid #ddd;
+    border-radius: 8px; font-size: 0.95rem; margin-bottom: 4px;
+  }
+  input:focus { border-color: var(--accent); outline: none; }
+  .btn {
+    display: inline-block; padding: 10px 24px; border: none; border-radius: 8px;
+    font-size: 0.95rem; cursor: pointer; margin-top: 12px; color: #fff;
+  }
+  .btn-primary { background: var(--accent); }
+  .btn-success { background: var(--success); }
+  .btn-danger { background: #e74c3c; }
+  .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .msg { padding: 10px 14px; border-radius: 8px; margin-top: 12px; font-size: 0.9rem; display: none; }
+  .msg.ok { background: #d4edda; color: #155724; display: block; }
+  .msg.err { background: #f8d7da; color: #721c24; display: block; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-box { background: var(--bg); border-radius: 10px; padding: 16px; text-align: center; }
+  .stat-box .num { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+  .stat-box .lbl { font-size: 0.8rem; color: var(--muted); }
+  textarea { width: 100%; height: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: monospace; font-size: 0.85rem; }
+  .help { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+  #login-section { max-width: 400px; margin: 60px auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔧 Admin — Lindy Tickets</h1>
+  <a href="index.html">← Retour au scanner</a>
+</header>
+
+<!-- LOGIN -->
+<div id="login-section" class="container">
+  <div class="card">
+    <h2>🔐 Connexion Admin</h2>
+    <label>Mot de passe</label>
+    <input type="password" id="admin-pass" placeholder="Mot de passe admin">
+    <button class="btn btn-primary" onclick="login()">Connexion</button>
+    <div class="msg" id="login-msg"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin-panel" class="container" style="display:none;">
+
+  <!-- Stats -->
+  <div class="card">
+    <h2>📊 Statistiques</h2>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="num" id="s-total">-</div><div class="lbl">Total tickets</div></div>
+      <div class="stat-box"><div class="num" id="s-in" style="color:var(--success);">-</div><div class="lbl">Entrées</div></div>
+      <div class="stat-box"><div class="num" id="s-left">-</div><div class="lbl">Restants</div></div>
+    </div>
+    <button class="btn btn-outline" onclick="refreshStats()">🔄 Actualiser</button>
+    <button class="btn btn-success" onclick="exportCSV()">📥 Exporter CSV</button>
+  </div>
+
+  <!-- Event info -->
+  <div class="card">
+    <h2>🎉 Infos Événement</h2>
+    <label>Nom de l'événement</label>
+    <input type="text" id="ev-name" placeholder="Soirée Danse">
+    <label>Date</label>
+    <input type="text" id="ev-date" placeholder="15 / 06 / 2026">
+    <label>Lieu</label>
+    <input type="text" id="ev-location" placeholder="Salle des Fêtes">
+    <button class="btn btn-primary" onclick="saveEvent()">Enregistrer</button>
+    <div class="msg" id="ev-msg"></div>
+  </div>
+
+  <!-- Import -->
+  <div class="card">
+    <h2>📋 Importer la liste des invités</h2>
+    <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">
+      Collez ci-dessous la liste au format JSON. Le script Python peut la générer,<br>
+      ou saisissez directement au format :
+    </p>
+    <textarea id="import-data" placeholder='[
+  {"nom": "Dupont", "prenom": "Marie", "nb_tickets": 2},
+  {"nom": "Martin", "prenom": "Jean", "nb_tickets": 1}
+]'></textarea>
+    <p class="help">Un ticket unique avec QR code sera créé pour chaque entrée. Les anciens tickets seront supprimés.</p>
+    <button class="btn btn-primary" onclick="importGuests()">Importer</button>
+    <div class="msg" id="import-msg"></div>
+  </div>
+
+  <!-- Import Excel -->
+  <div class="card">
+    <h2>📂 Importer depuis un fichier Excel (.xlsx / .csv)</h2>
+    <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">
+      Colonnes attendues : <strong>Nom, Prénom, Nb Tickets</strong> (avec en-tête en ligne 1)
+    </p>
+    <input type="file" id="excel-file" accept=".xlsx,.xls,.csv">
+    <button class="btn btn-primary" onclick="importExcel()" style="margin-top:8px;">Importer le fichier</button>
+    <div class="msg" id="excel-msg"></div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="card" style="border: 1px solid #e74c3c;">
+    <h2 style="color:#e74c3c;">⚠️ Zone Danger</h2>
+    <p style="font-size:0.9rem;margin-bottom:12px;">Remettre tous les check-ins à zéro (les tickets restent).</p>
+    <button class="btn btn-danger" onclick="resetCheckins()">Réinitialiser les check-ins</button>
+    <div class="msg" id="reset-msg"></div>
+  </div>
+
+</div>
+
+<!-- SheetJS for Excel parsing -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+const API = 'api.php';
+let adminPass = '';
+
+function login() {
+  adminPass = document.getElementById('admin-pass').value;
+  // Test with stats call
+  fetch(API + '?action=stats')
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) throw data.error;
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      refreshStats();
+      loadEvent();
+    })
+    .catch(e => showMsg('login-msg', 'err', 'Erreur connexion : ' + e));
+}
+
+function apiPost(action, body) {
+  return fetch(API + '?action=' + action, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, password: adminPass })
+  }).then(r => r.json());
+}
+
+function refreshStats() {
+  fetch(API + '?action=stats').then(r => r.json()).then(d => {
+    document.getElementById('s-total').textContent = d.total;
+    document.getElementById('s-in').textContent = d.checked_in;
+    document.getElementById('s-left').textContent = d.remaining;
+  });
+}
+
+function loadEvent() {
+  fetch(API + '?action=event').then(r => r.json()).then(d => {
+    document.getElementById('ev-name').value = d.name || '';
+    document.getElementById('ev-date').value = d.event_date || '';
+    document.getElementById('ev-location').value = d.location || '';
+  });
+}
+
+function saveEvent() {
+  apiPost('update_event', {
+    name: document.getElementById('ev-name').value,
+    event_date: document.getElementById('ev-date').value,
+    location: document.getElementById('ev-location').value,
+  }).then(d => {
+    showMsg('ev-msg', d.error ? 'err' : 'ok', d.error || '✅ Événement mis à jour');
+  });
+}
+
+function importGuests() {
+  let data;
+  try {
+    data = JSON.parse(document.getElementById('import-data').value);
+  } catch (e) {
+    showMsg('import-msg', 'err', 'JSON invalide : ' + e.message);
+    return;
+  }
+  apiPost('import', { guests: data }).then(d => {
+    if (d.error) showMsg('import-msg', 'err', d.error);
+    else {
+      showMsg('import-msg', 'ok', `✅ ${d.imported} tickets importés`);
+      refreshStats();
+    }
+  });
+}
+
+function importExcel() {
+  const file = document.getElementById('excel-file').files[0];
+  if (!file) { showMsg('excel-msg', 'err', 'Sélectionnez un fichier'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const workbook = XLSX.read(e.target.result, { type: 'binary' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      // Skip header row, parse columns
+      const guests = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || !row[0] || !row[1]) continue;
+        guests.push({
+          nom: String(row[0]).trim(),
+          prenom: String(row[1]).trim(),
+          nb_tickets: parseInt(row[2]) || 1,
+        });
+      }
+
+      if (guests.length === 0) {
+        showMsg('excel-msg', 'err', 'Aucun invité trouvé. Vérifiez les colonnes : Nom, Prénom, Nb Tickets');
+        return;
+      }
+
+      // Preview
+      showMsg('excel-msg', 'ok', `📋 ${guests.length} noms détectés. Import en cours...`);
+
+      apiPost('import', { guests }).then(d => {
+        if (d.error) showMsg('excel-msg', 'err', d.error);
+        else {
+          showMsg('excel-msg', 'ok', `✅ ${d.imported} tickets créés à partir de ${guests.length} noms`);
+          refreshStats();
+        }
+      });
+
+    } catch (err) {
+      showMsg('excel-msg', 'err', 'Erreur lecture fichier : ' + err.message);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function resetCheckins() {
+  if (!confirm('⚠️ Remettre TOUS les check-ins à zéro ? Cette action est irréversible.')) return;
+  apiPost('reset', {}).then(d => {
+    if (d.error) showMsg('reset-msg', 'err', d.error);
+    else {
+      showMsg('reset-msg', 'ok', `✅ ${d.reset} check-ins réinitialisés`);
+      refreshStats();
+    }
+  });
+}
+
+function exportCSV() {
+  window.open(API + '?action=export&password=' + encodeURIComponent(adminPass));
+}
+
+function showMsg(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = 'msg ' + type;
+  el.textContent = text;
+}
+</script>
+</body>
+</html>

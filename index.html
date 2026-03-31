@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Scanner Tickets</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root {
+    --primary: #1a1a2e; --accent: #e94560; --success: #27ae60;
+    --warning: #f39c12; --danger: #e74c3c; --bg: #f0f2f5;
+    --card: #ffffff; --text: #333; --muted: #888;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100dvh; padding-bottom: 80px;
+  }
+
+  /* Header */
+  header {
+    background: var(--primary); color: #fff;
+    padding: 16px 20px; text-align: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 { font-size: 1.15rem; font-weight: 600; }
+  header .subtitle { font-size: 0.8rem; opacity: 0.7; margin-top: 2px; }
+  header .stats {
+    display: flex; justify-content: center; gap: 24px;
+    margin-top: 10px; font-size: 0.85rem; opacity: 0.9;
+  }
+  header .stats .num { font-weight: 700; font-size: 1.1rem; }
+
+  /* Scanner */
+  #scanner-screen { padding-top: 4px; }
+  #camera-section { padding: 12px 16px; }
+  #reader { width: 100%; max-width: 400px; margin: 0 auto; }
+
+  .camera-help {
+    background: #fff3cd; border: 1px solid #ffc107; border-radius: 12px;
+    padding: 16px; margin: 12px 16px; font-size: 0.88rem; line-height: 1.5;
+  }
+  .camera-help strong { color: var(--text); }
+  .camera-help .retry-btn {
+    display: inline-block; margin-top: 10px;
+    background: var(--primary); color: #fff; border: none;
+    border-radius: 8px; padding: 10px 20px; font-size: 0.9rem; cursor: pointer;
+  }
+
+  /* Manual entry */
+  .manual-entry {
+    padding: 12px 16px; display: flex; gap: 8px; align-items: center;
+  }
+  .manual-entry input {
+    flex: 1; padding: 12px 16px; border: 2px solid #ddd;
+    border-radius: 10px; font-size: 1rem; font-family: monospace;
+    text-transform: uppercase;
+  }
+  .manual-entry input:focus { border-color: var(--accent); outline: none; }
+  .manual-entry button {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 10px; padding: 12px 20px; font-size: 1rem;
+    cursor: pointer; white-space: nowrap;
+  }
+
+  .section-sep {
+    text-align: center; color: var(--muted); font-size: 0.8rem;
+    margin: 6px 16px; position: relative;
+  }
+  .section-sep::before, .section-sep::after {
+    content: ''; position: absolute; top: 50%; width: 30%; height: 1px; background: #ddd;
+  }
+  .section-sep::before { left: 5%; }
+  .section-sep::after { right: 5%; }
+
+  /* Result popup */
+  .result-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 200;
+    justify-content: center; align-items: center; padding: 20px;
+  }
+  .result-overlay.show { display: flex; }
+  .result-card {
+    background: var(--card); border-radius: 16px;
+    padding: 32px 24px; text-align: center;
+    width: 100%; max-width: 340px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: pop 0.25s ease;
+  }
+  @keyframes pop { 0% { transform: scale(0.85); opacity:0; } 100% { transform: scale(1); opacity:1; } }
+  .result-card .icon { font-size: 3.5rem; margin-bottom: 12px; }
+  .result-card .status { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+  .result-card .name { font-size: 1.1rem; color: var(--text); margin-bottom: 4px; }
+  .result-card .detail { font-size: 0.9rem; color: var(--muted); }
+  .result-card.valid { border-top: 4px solid var(--success); }
+  .result-card.valid .status { color: var(--success); }
+  .result-card.duplicate { border-top: 4px solid var(--warning); }
+  .result-card.duplicate .status { color: var(--warning); }
+  .result-card.invalid { border-top: 4px solid var(--danger); }
+  .result-card.invalid .status { color: var(--danger); }
+  .result-card button {
+    margin-top: 20px; background: var(--primary); color: #fff;
+    border: none; border-radius: 8px; padding: 12px 32px;
+    font-size: 1rem; cursor: pointer; width: 100%;
+  }
+
+  /* History */
+  #history { padding: 12px 16px; }
+  #history h3 {
+    font-size: 0.85rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+  }
+  .history-item {
+    background: var(--card); border-radius: 10px;
+    padding: 12px 16px; margin-bottom: 6px;
+    display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;
+  }
+  .history-item .hi-name { font-weight: 600; }
+  .history-item .hi-time { color: var(--muted); font-size: 0.8rem; }
+
+  /* Search tab */
+  #search-section { display: none; padding: 16px; }
+  #search-input {
+    width: 100%; padding: 12px 16px; border: 1px solid #ddd;
+    border-radius: 10px; font-size: 1rem; margin-bottom: 12px;
+  }
+  .guest-item {
+    background: var(--card); border-radius: 10px;
+    padding: 12px 16px; margin-bottom: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .guest-item .gi-name { font-weight: 500; }
+  .gi-checked { color: var(--success); font-size: 0.85rem; }
+  .gi-pending { color: var(--muted); font-size: 0.85rem; }
+  .manual-btn {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 6px; padding: 6px 12px; font-size: 0.8rem;
+    cursor: pointer; margin-left: 8px;
+  }
+
+  /* Nav */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--card); border-top: 1px solid #e0e0e0;
+    display: flex; justify-content: center; z-index: 100;
+  }
+  .nav-btn {
+    flex: 1; padding: 10px; border: none; background: transparent;
+    font-size: 0.75rem; color: var(--muted); cursor: pointer; text-align: center;
+  }
+  .nav-btn.active { color: var(--accent); font-weight: 600; }
+  .nav-btn .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 2px; }
+
+  /* Connection status */
+  .conn-status {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    margin-right: 4px; vertical-align: middle;
+  }
+  .conn-online { background: var(--success); }
+  .conn-offline { background: var(--danger); }
+
+  /* Admin link */
+  .admin-link {
+    text-align: center; padding: 8px;
+    font-size: 0.75rem; color: var(--muted);
+  }
+  .admin-link a { color: var(--muted); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎟️ <span id="event-name">Scanner Tickets</span></h1>
+  <div class="subtitle" id="event-sub"></div>
+  <div class="stats">
+    <div>Entrées <span class="num" id="stat-in">-</span></div>
+    <div>Restants <span class="num" id="stat-left">-</span></div>
+    <div>Total <span class="num" id="stat-total">-</span></div>
+  </div>
+</header>
+
+<!-- SCANNER TAB -->
+<div id="scanner-screen">
+  <div id="camera-section">
+    <div id="reader"></div>
+    <div id="camera-error" style="display:none;"></div>
+  </div>
+
+  <div class="section-sep">ou saisir le code manuellement</div>
+  <div class="manual-entry">
+    <input type="text" id="manual-code" placeholder="Code ticket (ex: 4FBB4AEF99A1)" maxlength="12" autocomplete="off">
+    <button onclick="manualCodeSubmit()">OK</button>
+  </div>
+
+  <div id="history">
+    <h3>Derniers scans</h3>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- SEARCH TAB -->
+<div id="search-section">
+  <input type="text" id="search-input" placeholder="Rechercher un nom..." autocomplete="off">
+  <div id="search-results"></div>
+</div>
+
+<!-- RESULT POPUP -->
+<div class="result-overlay" id="result-overlay">
+  <div class="result-card" id="result-card">
+    <div class="icon" id="res-icon"></div>
+    <div class="status" id="res-status"></div>
+    <div class="name" id="res-name"></div>
+    <div class="detail" id="res-detail"></div>
+    <button onclick="closeResult()">Continuer</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" data-tab="scan" onclick="switchTab('scan')">
+    <span class="nav-icon">📷</span>Scanner
+  </button>
+  <button class="nav-btn" data-tab="list" onclick="switchTab('list')">
+    <span class="nav-icon">📋</span>Liste
+  </button>
+  <button class="nav-btn" data-tab="admin" onclick="window.location='admin.html'">
+    <span class="nav-icon">⚙️</span>Admin
+  </button>
+</div>
+
+<script>
+const API = 'api.php';
+let scannerPaused = false;
+let scanner = null;
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadEvent();
+  refreshStats();
+  loadHistory();
+  initCamera();
+  // Auto-refresh stats every 30s
+  setInterval(refreshStats, 30000);
+});
+
+// ── API helpers ──
+async function apiGet(action, params = '') {
+  const r = await fetch(`${API}?action=${action}${params}`);
+  return r.json();
+}
+
+async function apiPost(action, body) {
+  const r = await fetch(`${API}?action=${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+// ── Event info ──
+async function loadEvent() {
+  const ev = await apiGet('event');
+  if (ev.name) document.getElementById('event-name').textContent = ev.name;
+  const parts = [ev.event_date, ev.location].filter(Boolean);
+  document.getElementById('event-sub').textContent = parts.join('  •  ');
+}
+
+// ── Stats ──
+async function refreshStats() {
+  try {
+    const d = await apiGet('stats');
+    document.getElementById('stat-in').textContent = d.checked_in;
+    document.getElementById('stat-left').textContent = d.remaining;
+    document.getElementById('stat-total').textContent = d.total;
+  } catch (_) {}
+}
+
+// ── Camera ──
+function initCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showCamErr(); return;
+  }
+  scanner = new Html5Qrcode("reader");
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    onScan, () => {}
+  ).catch(() => showCamErr());
+}
+
+function showCamErr() {
+  document.getElementById('reader').style.display = 'none';
+  const el = document.getElementById('camera-error');
+  el.style.display = 'block';
+  el.innerHTML = `<div class="camera-help">
+    <strong>📷 Caméra non disponible</strong>
+    <p style="margin-top:6px;">Vérifiez les permissions : cadenas 🔒 → Caméra → Autoriser, puis rechargez.</p>
+    <p style="margin-top:8px;color:var(--success);font-weight:600;">✅ La saisie manuelle fonctionne toujours !</p>
+    <button class="retry-btn" onclick="location.reload()">🔄 Réessayer</button>
+  </div>`;
+}
+
+// ── Scan ──
+function onScan(decoded) {
+  if (scannerPaused) return;
+  scannerPaused = true;
+  if (navigator.vibrate) navigator.vibrate(100);
+  processTicket(decoded.trim().toUpperCase(), 'scanner');
+}
+
+function manualCodeSubmit() {
+  const inp = document.getElementById('manual-code');
+  const code = inp.value.trim().toUpperCase();
+  if (!code) return;
+  if (navigator.vibrate) navigator.vibrate(50);
+  processTicket(code, 'manual');
+  inp.value = '';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.activeElement.id === 'manual-code') manualCodeSubmit();
+  if (e.key === 'Escape') closeResult();
+});
+
+async function processTicket(code, method) {
+  const card = document.getElementById('result-card');
+  const icon = document.getElementById('res-icon');
+  const status = document.getElementById('res-status');
+  const name = document.getElementById('res-name');
+  const detail = document.getElementById('res-detail');
+  card.className = 'result-card';
+
+  try {
+    const d = await apiPost('checkin', { code, method });
+
+    if (d.status === 'unknown') {
+      card.classList.add('invalid');
+      icon.textContent = '❌'; status.textContent = 'TICKET INCONNU';
+      name.textContent = ''; detail.textContent = 'Code: ' + code;
+    } else if (d.status === 'duplicate') {
+      const t = new Date(d.checked_in_at).toLocaleTimeString('fr-FR');
+      card.classList.add('duplicate');
+      icon.textContent = '⚠️'; status.textContent = 'DÉJÀ SCANNÉ';
+      name.textContent = d.prenom + ' ' + d.nom;
+      detail.textContent = 'Ticket ' + d.ticket_label + ' — scanné à ' + t;
+    } else if (d.status === 'valid') {
+      card.classList.add('valid');
+      icon.textContent = '✅'; status.textContent = 'ENTRÉE VALIDÉE';
+      name.textContent = d.prenom + ' ' + d.nom;
+      detail.textContent = 'Ticket ' + d.ticket_label;
+      refreshStats();
+      loadHistory();
+    }
+  } catch (err) {
+    card.classList.add('invalid');
+    icon.textContent = '🔌'; status.textContent = 'ERREUR RÉSEAU';
+    name.textContent = ''; detail.textContent = 'Vérifiez la connexion internet';
+  }
+
+  document.getElementById('result-overlay').classList.add('show');
+}
+
+function closeResult() {
+  document.getElementById('result-overlay').classList.remove('show');
+  scannerPaused = false;
+}
+
+// ── History ──
+async function loadHistory() {
+  try {
+    const rows = await apiGet('history', '&n=15');
+    document.getElementById('history-list').innerHTML = rows.map(h => {
+      const t = new Date(h.checked_in_at).toLocaleTimeString('fr-FR');
+      return `<div class="history-item"><div><div class="hi-name">${h.prenom} ${h.nom}</div></div><div class="hi-time">${t}</div></div>`;
+    }).join('') || '<div style="text-align:center;color:var(--muted);padding:20px;">Aucun scan pour le moment</div>';
+  } catch (_) {}
+}
+
+// ── Search ──
+let searchTimeout;
+document.getElementById('search-input').addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const q = this.value.trim();
+  searchTimeout = setTimeout(() => searchGuests(q), 300);
+});
+
+async function searchGuests(q) {
+  const action = q ? 'search' : 'guests';
+  const params = q ? '&q=' + encodeURIComponent(q) : '';
+  const rows = await apiGet(action, params);
+  renderGuestList(rows);
+}
+
+function renderGuestList(list) {
+  document.getElementById('search-results').innerHTML = list.map(g => {
+    const isIn = g.checked_in == 1;
+    return `<div class="guest-item">
+      <div>
+        <div class="gi-name">${g.prenom} ${g.nom}</div>
+        <div style="font-size:0.8rem;color:var(--muted);">Ticket ${g.ticket_label} — ${g.ticket_code}</div>
+      </div>
+      <div>${isIn
+        ? '<span class="gi-checked">✅ Entré</span>'
+        : `<span class="gi-pending">En attente</span><button class="manual-btn" onclick="manualCheckin('${g.ticket_code}')">Valider</button>`
+      }</div>
+    </div>`;
+  }).join('') || '<div style="text-align:center;color:var(--muted);padding:20px;">Aucun résultat</div>';
+}
+
+function manualCheckin(code) {
+  processTicket(code, 'manual').then(() => {
+    // Refresh la liste après check-in
+    const q = document.getElementById('search-input').value.trim();
+    setTimeout(() => searchGuests(q), 500);
+  });
+}
+
+// ── Tabs ──
+function switchTab(tab) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-tab="'+tab+'"]').classList.add('active');
+  document.getElementById('scanner-screen').style.display = tab === 'scan' ? 'block' : 'none';
+  document.getElementById('search-section').style.display = tab === 'list' ? 'block' : 'none';
+  if (tab === 'list') searchGuests('');
+}
+</script>
+</body>
+</html>
