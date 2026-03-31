@@ -69,6 +69,7 @@ body {
 .info .tnum { font-size: 13px; color: #7f8c8d; margin-top: 6px; }
 .qr-box { text-align: center; flex-shrink: 0; }
 .qr-box canvas { display: block !important; }
+.qr-box img { display: none !important; }
 .qr-code { font-family: monospace; font-size: 9px; color: #bdc3c7; margin-top: 5px; letter-spacing: 1px; }
 .footer {
     text-align: center; font-size: 10px; color: #bdc3c7;
