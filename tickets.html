@@ -3,156 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Générer Tickets — Lindy</title>
+<title>Tickets — Lindy</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-  :root { --primary: #1a1a2e; --accent: #e94560; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #f0f2f5; }
-
-  /* ── UI (hidden when printing) ── */
-  .toolbar {
-    background: var(--primary); color: #fff; padding: 16px 20px;
-    text-align: center; position: sticky; top: 0; z-index: 10;
-  }
-  .toolbar h1 { font-size: 1.1rem; margin-bottom: 8px; }
-  .toolbar button {
-    background: var(--accent); color: #fff; border: none;
-    border-radius: 8px; padding: 10px 24px; font-size: 0.95rem;
-    cursor: pointer; margin: 4px;
-  }
-  .toolbar a { color: #fff; opacity: 0.7; font-size: 0.85rem; text-decoration: none; display: block; margin-top: 8px; }
-  .toolbar select { padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; margin: 4px; }
-  .loading { text-align: center; padding: 40px; color: #888; font-size: 1.1rem; }
-  #status { font-size: 0.85rem; margin-top: 8px; opacity: 0.8; }
-
-  /* ── Ticket cards ── */
-  .tickets-container { padding: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
-
-  .ticket {
-    width: 420px; height: 200px;
-    background: #fff; border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    overflow: hidden; position: relative;
-    page-break-inside: avoid;
-  }
-  .ticket-band {
-    background: var(--primary); height: 56px;
-    display: flex; flex-direction: column;
-    justify-content: center; align-items: center;
-    color: #fff;
-  }
-  .ticket-band .ev-name { font-size: 15px; font-weight: 700; }
-  .ticket-band .ev-sub { font-size: 10px; opacity: 0.8; margin-top: 2px; }
-  .ticket-accent { height: 3px; background: var(--accent); }
-  .ticket-body {
-    display: flex; padding: 12px 16px; height: calc(200px - 59px);
-    align-items: center;
-  }
-  .ticket-info { flex: 1; }
-  .ticket-name { font-size: 16px; font-weight: 700; color: #333; }
-  .ticket-sub { font-size: 12px; color: #888; margin-top: 4px; }
-  .ticket-qr { width: 110px; text-align: center; }
-  .ticket-qr canvas { display: block; margin: 0 auto; }
-  .ticket-code { font-family: monospace; font-size: 9px; color: #aaa; margin-top: 4px; text-align: center; }
-  .ticket-footer {
-    position: absolute; bottom: 4px; left: 16px;
-    font-size: 8px; color: #ccc;
-  }
-
-  /* ── Print styles ── */
-  @media print {
-    .toolbar { display: none !important; }
-    body { background: #fff; }
-    .tickets-container { padding: 0; gap: 10px; }
-    .ticket {
-      box-shadow: none;
-      border: 1px solid #ddd;
-      break-inside: avoid;
-    }
-  }
+  :root { --primary:#1a1a2e; --accent:#e94560; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,sans-serif;background:#f0f2f5}
+  .toolbar{background:var(--primary);color:#fff;padding:14px 20px;text-align:center;position:sticky;top:0;z-index:10}
+  .toolbar h1{font-size:1.05rem;margin-bottom:6px}
+  .toolbar button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:.88rem;cursor:pointer;margin:3px}
+  .toolbar a{color:#fff;opacity:.7;font-size:.82rem;text-decoration:none;display:block;margin-top:6px}
+  #status{font-size:.82rem;margin-top:6px;opacity:.8}
+  .tickets-container{padding:16px;display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
+  .ticket{width:420px;height:195px;background:#FFF8E7;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.1);overflow:hidden;position:relative;page-break-inside:avoid}
+  .ticket-band{background:var(--primary);height:52px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff}
+  .ticket-band .ev-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#D4A017}
+  .ticket-band .ev-name{font-size:15px;font-weight:700;margin-top:1px}
+  .ticket-band .ev-sub{font-size:9px;opacity:.7;margin-top:1px}
+  .ticket-accent{height:3px;background:var(--accent)}
+  .ticket-body{display:flex;padding:12px 16px;height:calc(195px - 55px);align-items:center}
+  .ticket-info{flex:1}
+  .ticket-name{font-size:16px;font-weight:700;color:#1a1a2e}
+  .ticket-sub{font-size:11px;color:#888;margin-top:3px}
+  .ticket-stars{color:#D4A017;font-size:12px;margin-top:6px;letter-spacing:3px}
+  .ticket-qr{width:105px;text-align:center}
+  .ticket-qr canvas{display:block;margin:0 auto}
+  .ticket-code{font-family:monospace;font-size:8px;color:#aaa;margin-top:3px;text-align:center}
+  .ticket-footer{position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:7.5px;color:#ccc}
+  @media print{.toolbar{display:none!important}body{background:#fff}.tickets-container{padding:0;gap:8px}.ticket{box-shadow:none;border:1px solid #ddd;break-inside:avoid}}
 </style>
 </head>
 <body>
-
 <div class="toolbar">
-  <h1>🎟️ Génération des Tickets</h1>
-  <div>
-    <button onclick="window.print()">🖨️ Imprimer / Sauver en PDF</button>
-    <button onclick="loadTickets()">🔄 Recharger</button>
-  </div>
+  <h1>🎟️ Tous les Tickets</h1>
+  <button onclick="window.print()">🖨️ Imprimer / PDF</button>
+  <button onclick="loadTickets()">🔄 Recharger</button>
   <div id="status">Chargement...</div>
   <a href="admin.html">← Retour à l'admin</a>
 </div>
-
-<div class="tickets-container" id="tickets-container">
-  <div class="loading">Chargement des tickets...</div>
-</div>
-
+<div class="tickets-container" id="tickets-container"><div style="text-align:center;padding:40px;color:#888;">Chargement...</div></div>
 <script>
-const API = 'api.php';
+const API='api.php';
+const params=new URLSearchParams(location.search);
+const eventId=params.get('event_id')||1;
 
-async function loadTickets() {
-  const [event, guests] = await Promise.all([
-    fetch(API + '?action=event').then(r => r.json()),
-    fetch(API + '?action=guests').then(r => r.json()),
+async function loadTickets(){
+  const [ev,guests]=await Promise.all([
+    fetch(`${API}?action=event&event_id=${eventId}`).then(r=>r.json()),
+    fetch(`${API}?action=guests&event_id=${eventId}`).then(r=>r.json()),
   ]);
+  const container=document.getElementById('tickets-container');
+  container.innerHTML='';
+  if(!guests.length){container.innerHTML='<div style="padding:40px;color:#888;text-align:center;">Aucun ticket.</div>';document.getElementById('status').textContent='0 tickets';return;}
+  document.getElementById('status').textContent=`${guests.length} tickets — ${esc(ev.name||'')}`;
+  const evName=ev.name||'Événement';
+  const evSub=[ev.event_date,ev.location].filter(Boolean).join('  •  ');
 
-  const container = document.getElementById('tickets-container');
-  container.innerHTML = '';
-
-  if (!guests.length) {
-    container.innerHTML = '<div class="loading">Aucun ticket. Importez une liste depuis l\'admin.</div>';
-    document.getElementById('status').textContent = 'Aucun ticket';
-    return;
-  }
-
-  document.getElementById('status').textContent = `${guests.length} tickets`;
-
-  const evName = event.name || 'Événement';
-  const evSub = [event.event_date, event.location].filter(Boolean).join('  •  ');
-
-  for (const g of guests) {
-    const ticket = document.createElement('div');
-    ticket.className = 'ticket';
-    ticket.innerHTML = `
-      <div class="ticket-band">
-        <div class="ev-name">${esc(evName)}</div>
-        ${evSub ? `<div class="ev-sub">${esc(evSub)}</div>` : ''}
-      </div>
+  for(const g of guests){
+    const t=document.createElement('div');t.className='ticket';
+    t.innerHTML=`
+      <div class="ticket-band"><div class="ev-title">★ Rock n' Roll ★</div><div class="ev-name">${esc(evName)}</div>${evSub?`<div class="ev-sub">${esc(evSub)}</div>`:''}</div>
       <div class="ticket-accent"></div>
       <div class="ticket-body">
-        <div class="ticket-info">
-          <div class="ticket-name">${esc(g.prenom)} ${esc(g.nom)}</div>
-          <div class="ticket-sub">Ticket ${esc(g.ticket_label)}</div>
-        </div>
-        <div class="ticket-qr">
-          <div id="qr-${g.ticket_code}"></div>
-          <div class="ticket-code">${g.ticket_code}</div>
-        </div>
+        <div class="ticket-info"><div class="ticket-name">${esc(g.prenom)} ${esc(g.nom)}</div><div class="ticket-sub">Ticket ${esc(g.ticket_label)}</div><div class="ticket-stars">★ ★ ★ ★ ★</div></div>
+        <div class="ticket-qr"><div id="qr-${g.ticket_code}"></div><div class="ticket-code">${g.ticket_code}</div></div>
       </div>
-      <div class="ticket-footer">Présentez ce ticket à l'entrée • 1 ticket = 1 entrée</div>
-    `;
-    container.appendChild(ticket);
-
-    // Generate QR code
-    new QRCode(document.getElementById('qr-' + g.ticket_code), {
-      text: g.ticket_code,
-      width: 90,
-      height: 90,
-      colorDark: '#000000',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M,
-    });
+      <div class="ticket-footer">Présentez ce ticket à l'entrée  ★  1 ticket = 1 entrée</div>`;
+    container.appendChild(t);
+    new QRCode(document.getElementById('qr-'+g.ticket_code),{text:g.ticket_code,width:85,height:85,colorDark:'#1a1a2e',colorLight:'#FFF8E7',correctLevel:QRCode.CorrectLevel.M});
   }
 }
-
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 loadTickets();
 </script>
 </body>
