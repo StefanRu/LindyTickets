@@ -1,18 +1,10 @@
 <?php
-/**
- * Configuration base de données — Lindy Tickets v2
- * À modifier avec vos identifiants hébergeur
- */
-
-define('DB_HOST', '');
-define('DB_NAME', '');        // Nom de la BDD
+define('DB_HOST', 
+define('DB_NAME', 'dbs15500217');        // Nom de la BDD
 define('DB_USER', ''); // Utilisateur BDD
 define('DB_PASS', ''); // Mot de passe BDD
-
 // Clé secrète pour l'admin (changez-la !)
 define('ADMIN_PASSWORD', '');
-
-// URL du site
 define('SITE_URL', '');
 
 date_default_timezone_set('Europe/Paris');
@@ -28,8 +20,4 @@ function getDB(): PDO {
         ]);
     }
     return $pdo;
-}
-
-function generate_ticket_code(): string {
-    return strtoupper(bin2hex(random_bytes(6)));
 }

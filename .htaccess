@@ -1,18 +1,15 @@
-# Protection des fichiers sensibles
-<FilesMatch "^(config\.php|schema\.sql|install\.php)$">
+<FilesMatch "^(config\.php|schema\.sql|install\.php|debug\.log|ticket_template\.php|log_template\.php)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
 </FilesMatch>
 
-# Forcer HTTPS
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteCond %{HTTPS} off
     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </IfModule>
 
-# Headers de sécurité
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"

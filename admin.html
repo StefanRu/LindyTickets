@@ -6,407 +6,317 @@
 <title>Admin — Lindy Tickets</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
-  :root { --primary: #1a1a2e; --accent: #e94560; --success: #27ae60; --warning: #f39c12; --danger: #e74c3c; --bg: #f0f2f5; --card: #fff; --text: #333; --muted: #888; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
-  header { background: var(--primary); color: #fff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
-  header h1 { font-size: 1.1rem; }
-  header a { color: #fff; opacity: 0.7; font-size: 0.85rem; text-decoration: none; }
-  .container { max-width: 750px; margin: 0 auto; padding: 16px; }
-  .card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-  .card h2 { font-size: 1rem; margin-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 6px; }
-  label { display: block; font-size: 0.82rem; color: var(--muted); margin: 8px 0 3px; }
-  input[type=text], input[type=password], input[type=number], input[type=file], select {
-    width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem;
-  }
-  input:focus, select:focus { border-color: var(--accent); outline: none; }
-  textarea { width: 100%; height: 140px; padding: 9px; border: 1px solid #ddd; border-radius: 8px; font-family: monospace; font-size: 0.82rem; }
-  .btn { display: inline-block; padding: 9px 20px; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; color: #fff; }
-  .btn-primary { background: var(--accent); }
-  .btn-success { background: var(--success); }
-  .btn-danger { background: var(--danger); }
-  .btn-small { padding: 5px 12px; font-size: 0.78rem; border-radius: 6px; }
-  .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
-  .btn:disabled { opacity: 0.4; }
-  .msg { padding: 8px 12px; border-radius: 8px; margin-top: 8px; font-size: 0.85rem; display: none; }
-  .msg.ok { background: #d4edda; color: #155724; display: block; }
-  .msg.err { background: #f8d7da; color: #721c24; display: block; }
-  .row { display: flex; gap: 10px; align-items: flex-end; }
-  .row > * { flex: 1; }
-  .row > .shrink { flex: 0 0 auto; }
-  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
-  .stat-box { background: var(--bg); border-radius: 10px; padding: 14px; text-align: center; }
-  .stat-box .num { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
-  .stat-box .lbl { font-size: 0.78rem; color: var(--muted); }
-  .help { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
-  .guest-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
-  .guest-table th { text-align: left; padding: 8px 6px; border-bottom: 2px solid #eee; color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; }
-  .guest-table td { padding: 7px 6px; border-bottom: 1px solid #f0f0f0; }
-  .guest-table tr:hover { background: #fafafa; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
-  .badge-ok { background: #d4edda; color: #155724; }
-  .badge-wait { background: #e2e3e5; color: #383d41; }
-  .actions { display: flex; gap: 4px; flex-wrap: wrap; }
-  .event-selector { display: flex; gap: 10px; align-items: center; }
-  .event-selector select { max-width: 300px; }
-  .hidden { display: none !important; }
-  #login-section { max-width: 380px; margin: 60px auto; }
+:root{--pri:#1a1a2e;--acc:#e94560;--ok:#27ae60;--warn:#f39c12;--err:#e74c3c;--bg:#f0f2f5;--card:#fff;--txt:#333;--mut:#888}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt)}
+header{background:var(--pri);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:1.1rem}
+header a{color:#fff;opacity:.7;font-size:.82rem;text-decoration:none}
+.box{max-width:750px;margin:0 auto;padding:16px}
+.card{background:var(--card);border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card h2{font-size:1rem;margin-bottom:10px;color:var(--pri)}
+label{display:block;font-size:.82rem;color:var(--mut);margin:8px 0 3px}
+input[type=text],input[type=password],input[type=number],input[type=file],select,textarea{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:.9rem}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);outline:none}
+textarea{height:130px;font-family:monospace;font-size:.82rem}
+.btn{display:inline-block;padding:9px 18px;border:none;border-radius:8px;font-size:.88rem;cursor:pointer;color:#fff;margin-top:8px}
+.bp{background:var(--acc)}.bs{background:var(--ok)}.bd{background:var(--err)}.bo{background:transparent;border:1.5px solid var(--pri);color:var(--pri)}
+.btn-s{padding:5px 12px;font-size:.78rem;border-radius:6px;margin-top:0}
+.msg{padding:8px 12px;border-radius:8px;margin-top:8px;font-size:.85rem;display:none}
+.msg.ok{background:#d4edda;color:#155724;display:block}.msg.er{background:#f8d7da;color:#721c24;display:block}
+.row{display:flex;gap:10px;align-items:flex-end}.row>*{flex:1}
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sb{background:var(--bg);border-radius:10px;padding:14px;text-align:center}
+.sb .n{font-size:1.6rem;font-weight:700;color:var(--pri)}.sb .l{font-size:.78rem;color:var(--mut)}
+.gt{width:100%;border-collapse:collapse;margin-top:10px;font-size:.84rem}
+.gt th{text-align:left;padding:7px 5px;border-bottom:2px solid #eee;color:var(--mut);font-weight:600;font-size:.76rem;text-transform:uppercase}
+.gt td{padding:6px 5px;border-bottom:1px solid #f0f0f0}
+.gt tr:hover{background:#fafafa}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.74rem;font-weight:600}
+.badge-ok{background:#d4edda;color:#155724}.badge-w{background:#e2e3e5;color:#555}
+.acts{display:flex;gap:3px;flex-wrap:wrap}
+.hidden{display:none!important}
+.help{font-size:.78rem;color:var(--mut);margin-top:3px}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🔧 Admin — Lindy Tickets</h1>
-  <a href="index.html">← Scanner</a>
+  <h1>Admin — Lindy Tickets</h1>
+  <a href="index.html">Scanner</a>
 </header>
 
-<!-- ══ LOGIN ══ -->
-<div id="login-section" class="container">
+<!-- LOGIN -->
+<div id="login" class="box">
   <div class="card">
-    <h2>🔐 Connexion</h2>
+    <h2>Connexion</h2>
     <label>Mot de passe admin</label>
-    <input type="password" id="admin-pass" placeholder="••••••••">
-    <button class="btn btn-primary" style="margin-top:10px;width:100%;" onclick="login()">Connexion</button>
+    <input type="password" id="pw" placeholder="..." onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn bp" style="width:100%" onclick="doLogin()">Connexion</button>
     <div class="msg" id="login-msg"></div>
   </div>
 </div>
 
-<!-- ══ ADMIN ══ -->
-<div id="admin-panel" class="container hidden">
+<!-- ADMIN PANEL -->
+<div id="panel" class="box hidden">
 
   <!-- Event selector -->
   <div class="card">
-    <h2>🎉 Événement</h2>
-    <div class="event-selector">
-      <select id="ev-select" onchange="onEventChange()"><option value="">Chargement...</option></select>
-      <button class="btn btn-primary btn-small" onclick="showNewEvent()">+ Nouveau</button>
+    <h2>Evenement</h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="ev-sel" onchange="onEvChange()" style="flex:1"></select>
+      <button class="btn bp btn-s" onclick="showCreate()">+ Nouveau</button>
     </div>
-    <div id="new-event-form" class="hidden" style="margin-top:12px;border-top:1px solid #eee;padding-top:12px;">
+    <!-- Create event form -->
+    <div id="create-form" class="hidden" style="margin-top:12px;border-top:1px solid #eee;padding-top:12px">
       <div class="row">
-        <div><label>Nom</label><input type="text" id="ne-name" placeholder="Soirée Rock"></div>
-        <div><label>Date</label><input type="text" id="ne-date" placeholder="15/06/2026"></div>
+        <div><label>Nom</label><input type="text" id="ce-name" placeholder="Soiree Rock"></div>
+        <div><label>Date</label><input type="text" id="ce-date" placeholder="15/06/2026"></div>
       </div>
-      <label>Lieu</label><input type="text" id="ne-location" placeholder="Salle des Fêtes">
-      <div style="margin-top:8px;">
-        <button class="btn btn-success btn-small" onclick="createEvent()">Créer</button>
-        <button class="btn btn-outline btn-small" onclick="hideNewEvent()">Annuler</button>
-      </div>
+      <label>Lieu</label><input type="text" id="ce-loc" placeholder="Salle des Fetes">
+      <button class="btn bs btn-s" onclick="createEv()">Creer</button>
+      <button class="btn bo btn-s" onclick="hideCreate()">Annuler</button>
     </div>
-    <!-- Edit current event -->
-    <div id="edit-event" class="hidden" style="margin-top:12px;border-top:1px solid #eee;padding-top:12px;">
+    <!-- Edit event -->
+    <div id="edit-form" class="hidden" style="margin-top:12px;border-top:1px solid #eee;padding-top:12px">
       <div class="row">
         <div><label>Nom</label><input type="text" id="ee-name"></div>
         <div><label>Date</label><input type="text" id="ee-date"></div>
       </div>
-      <label>Lieu</label><input type="text" id="ee-location">
-      <div style="margin-top:8px;">
-        <button class="btn btn-primary btn-small" onclick="saveEvent()">Enregistrer</button>
-        <button class="btn btn-danger btn-small" onclick="deleteEvent()">Supprimer événement</button>
-      </div>
+      <label>Lieu</label><input type="text" id="ee-loc">
+      <button class="btn bp btn-s" onclick="saveEv()">Enregistrer</button>
+      <button class="btn bd btn-s" onclick="delEv()">Supprimer</button>
       <div class="msg" id="ee-msg"></div>
     </div>
-    <div style="margin-top:8px;"><a href="#" style="font-size:0.82rem;color:var(--accent);" onclick="toggleEditEvent();return false;">✏️ Modifier cet événement</a></div>
+    <div style="margin-top:6px"><a href="#" style="font-size:.8rem;color:var(--acc)" onclick="toggleEdit();return false">Modifier cet evenement</a></div>
   </div>
 
   <!-- Stats -->
   <div class="card">
-    <h2>📊 Statistiques</h2>
-    <div class="stats-grid">
-      <div class="stat-box"><div class="num" id="s-total">-</div><div class="lbl">Total</div></div>
-      <div class="stat-box"><div class="num" id="s-in" style="color:var(--success);">-</div><div class="lbl">Entrées</div></div>
-      <div class="stat-box"><div class="num" id="s-left">-</div><div class="lbl">Restants</div></div>
+    <h2>Statistiques</h2>
+    <div class="sg">
+      <div class="sb"><div class="n" id="st-t">-</div><div class="l">Total</div></div>
+      <div class="sb"><div class="n" id="st-i" style="color:var(--ok)">-</div><div class="l">Entrees</div></div>
+      <div class="sb"><div class="n" id="st-r">-</div><div class="l">Restants</div></div>
     </div>
-    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-outline btn-small" onclick="refreshAll()">🔄 Actualiser</button>
-      <button class="btn btn-success btn-small" onclick="exportCSV()">📥 Export CSV</button>
-      <button class="btn btn-primary btn-small" onclick="openTicketsPage()">🎟️ Voir tous les tickets</button>
+    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn bo btn-s" onclick="refresh()">Actualiser</button>
+      <button class="btn bs btn-s" onclick="doExport()">Export CSV</button>
+      <button class="btn bp btn-s" onclick="window.open('tickets.html?event_id='+evId)">Tous les tickets</button>
     </div>
   </div>
 
-  <!-- Add guest on the fly -->
+  <!-- Add guest -->
   <div class="card">
-    <h2>👤 Ajouter un invité à la volée</h2>
+    <h2>Ajouter un invite</h2>
     <div class="row">
-      <div><label>Nom</label><input type="text" id="ag-nom" placeholder="Dupont"></div>
-      <div><label>Prénom</label><input type="text" id="ag-prenom" placeholder="Marie"></div>
-      <div style="flex:0 0 80px;"><label>Tickets</label><input type="number" id="ag-nb" value="1" min="1" max="20"></div>
+      <div><label>Nom</label><input type="text" id="ag-nom"></div>
+      <div><label>Prenom</label><input type="text" id="ag-pre"></div>
+      <div style="flex:0 0 80px"><label>Nb</label><input type="number" id="ag-nb" value="1" min="1" max="20"></div>
     </div>
-    <button class="btn btn-primary" style="margin-top:10px;" onclick="addGuest()">Ajouter</button>
+    <button class="btn bp" onclick="addGuest()">Ajouter</button>
     <div class="msg" id="ag-msg"></div>
   </div>
 
   <!-- Import -->
   <div class="card">
-    <h2>📂 Importer une liste</h2>
-    <label>Depuis un fichier Excel (.xlsx / .csv)</label>
-    <p class="help">Colonnes : Nom, Prénom, Nb Tickets (en-tête en ligne 1)</p>
-    <input type="file" id="excel-file" accept=".xlsx,.xls,.csv" style="margin-top:6px;">
-    <button class="btn btn-primary btn-small" onclick="importExcel()" style="margin-top:8px;">Importer fichier</button>
-    <div class="msg" id="excel-msg"></div>
-
-    <div style="margin-top:14px;border-top:1px solid #eee;padding-top:10px;">
+    <h2>Importer une liste</h2>
+    <label>Fichier Excel (.xlsx / .csv)</label>
+    <p class="help">Colonnes: Nom, Prenom, Nb Tickets (en-tete ligne 1)</p>
+    <input type="file" id="xl-file" accept=".xlsx,.xls,.csv">
+    <button class="btn bp btn-s" onclick="importXl()">Importer</button>
+    <div class="msg" id="xl-msg"></div>
+    <div style="margin-top:12px;border-top:1px solid #eee;padding-top:10px">
       <label>Ou coller du JSON</label>
-      <textarea id="import-data" placeholder='[{"nom":"Dupont","prenom":"Marie","nb_tickets":2}]'></textarea>
-      <button class="btn btn-primary btn-small" onclick="importJSON()">Importer JSON</button>
-      <div class="msg" id="import-msg"></div>
+      <textarea id="json-data" placeholder='[{"nom":"Dupont","prenom":"Marie","nb_tickets":2}]'></textarea>
+      <button class="btn bp btn-s" onclick="importJson()">Importer JSON</button>
+      <div class="msg" id="json-msg"></div>
     </div>
   </div>
 
-  <!-- Guest list with actions -->
+  <!-- Guest table -->
   <div class="card">
-    <h2>📋 Liste des invités</h2>
-    <input type="text" id="filter-input" placeholder="Filtrer par nom..." oninput="filterTable()" style="margin-bottom:8px;">
-    <div style="overflow-x:auto;">
-      <table class="guest-table" id="guest-table">
-        <thead><tr><th>Nom</th><th>Ticket</th><th>Code</th><th>Statut</th><th>Actions</th></tr></thead>
-        <tbody id="guest-tbody"></tbody>
-      </table>
+    <h2>Liste des invites</h2>
+    <input type="text" id="filter" placeholder="Filtrer..." oninput="filterGuests()" style="margin-bottom:8px">
+    <div style="overflow-x:auto">
+      <table class="gt"><thead><tr><th>Nom</th><th>Ticket</th><th>Code</th><th>Statut</th><th>Actions</th></tr></thead>
+      <tbody id="gtb"></tbody></table>
     </div>
   </div>
 
-  <!-- Danger zone -->
-  <div class="card" style="border:1px solid var(--danger);">
-    <h2 style="color:var(--danger);">⚠️ Zone Danger</h2>
-    <button class="btn btn-danger btn-small" onclick="resetAll()">Réinitialiser TOUS les check-ins</button>
-    <div class="msg" id="reset-msg"></div>
+  <!-- Danger -->
+  <div class="card" style="border:1px solid var(--err)">
+    <h2 style="color:var(--err)">Zone Danger</h2>
+    <button class="btn bd btn-s" onclick="resetAll()">Reinitialiser TOUS les check-ins</button>
+    <div class="msg" id="rst-msg"></div>
+  </div>
+
+  <!-- Log -->
+  <div class="card">
+    <h2>Debug Log</h2>
+    <button class="btn bo btn-s" onclick="openLog()">Ouvrir le log</button>
   </div>
 
 </div>
 
 <script>
-const API = 'api.php';
-let adminPass = '', currentEventId = 0, allGuests = [];
+const A = 'api.php';
+let pw = '', evId = 0, guests = [];
 
 // ── Auth ──
-function login() {
-  adminPass = document.getElementById('admin-pass').value;
-  apiFetch('events').then(d => {
+function doLogin() {
+  pw = document.getElementById('pw').value;
+  api('events').then(d => {
     if (d.error) throw d.error;
-    document.getElementById('login-section').classList.add('hidden');
-    document.getElementById('admin-panel').classList.remove('hidden');
-    populateEvents(d);
-  }).catch(e => showMsg('login-msg','err','Erreur: '+e));
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('panel').classList.remove('hidden');
+    fillEvents(d);
+  }).catch(e => msg('login-msg','er',String(e)));
 }
 
-// ── API helpers ──
-function apiFetch(action, params='') {
-  return fetch(`${API}?action=${action}${params}`).then(r=>r.json());
-}
-function apiPost(action, body) {
-  return fetch(`${API}?action=${action}`, {
+// ── API ──
+function api(act, p) { return fetch(A+'?action='+act+(p||'')).then(r => r.json()); }
+function post(act, body) {
+  return fetch(A+'?action='+act, {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({...body, password: adminPass})
-  }).then(r=>r.json());
+    body: JSON.stringify(Object.assign({password:pw}, body))
+  }).then(r => r.json());
 }
 
 // ── Events ──
-function populateEvents(events) {
-  const sel = document.getElementById('ev-select');
-  sel.innerHTML = events.length
-    ? events.map(e => `<option value="${e.id}">${esc(e.name)} (${e.total_tickets} tickets)</option>`).join('')
-    : '<option value="">Aucun événement — créez-en un</option>';
-  if (events.length) {
-    currentEventId = events[0].id;
-    refreshAll();
-  }
+function fillEvents(list) {
+  const sel = document.getElementById('ev-sel');
+  if (!list.length) { sel.innerHTML='<option value="">Aucun evenement</option>'; return; }
+  sel.innerHTML = list.map(e => '<option value="'+e.id+'">'+esc(e.name)+' ('+e.total_tickets+' tickets)</option>').join('');
+  evId = list[0].id;
+  refresh();
 }
-
-function onEventChange() {
-  currentEventId = parseInt(document.getElementById('ev-select').value) || 0;
-  document.getElementById('edit-event').classList.add('hidden');
-  if (currentEventId) refreshAll();
+function onEvChange() {
+  evId = parseInt(document.getElementById('ev-sel').value)||0;
+  document.getElementById('edit-form').classList.add('hidden');
+  if (evId) refresh();
 }
-
-function showNewEvent() { document.getElementById('new-event-form').classList.remove('hidden'); }
-function hideNewEvent() { document.getElementById('new-event-form').classList.add('hidden'); }
-
-function createEvent() {
-  apiPost('create_event', {
-    name: document.getElementById('ne-name').value,
-    event_date: document.getElementById('ne-date').value,
-    location: document.getElementById('ne-location').value,
+function showCreate(){document.getElementById('create-form').classList.remove('hidden')}
+function hideCreate(){document.getElementById('create-form').classList.add('hidden')}
+function createEv() {
+  post('create_event', {
+    name: document.getElementById('ce-name').value,
+    event_date: document.getElementById('ce-date').value,
+    location: document.getElementById('ce-loc').value,
   }).then(d => {
     if (d.error) return alert(d.error);
-    currentEventId = d.event_id;
-    hideNewEvent();
-    reloadEvents();
+    evId = d.event_id; hideCreate(); reloadEvents();
   });
 }
-
-function toggleEditEvent() {
-  const el = document.getElementById('edit-event');
+function toggleEdit() {
+  const el = document.getElementById('edit-form');
   el.classList.toggle('hidden');
   if (!el.classList.contains('hidden')) {
-    apiFetch('event', `&event_id=${currentEventId}`).then(ev => {
-      document.getElementById('ee-name').value = ev.name || '';
-      document.getElementById('ee-date').value = ev.event_date || '';
-      document.getElementById('ee-location').value = ev.location || '';
+    api('event','&event_id='+evId).then(e => {
+      document.getElementById('ee-name').value = e.name||'';
+      document.getElementById('ee-date').value = e.event_date||'';
+      document.getElementById('ee-loc').value = e.location||'';
     });
   }
 }
-
-function saveEvent() {
-  apiPost('update_event', {
-    event_id: currentEventId,
-    name: document.getElementById('ee-name').value,
-    event_date: document.getElementById('ee-date').value,
-    location: document.getElementById('ee-location').value,
-  }).then(d => {
-    showMsg('ee-msg', d.error ? 'err' : 'ok', d.error || '✅ Enregistré');
-    reloadEvents();
-  });
+function saveEv() {
+  post('update_event', {
+    event_id:evId,
+    name:document.getElementById('ee-name').value,
+    event_date:document.getElementById('ee-date').value,
+    location:document.getElementById('ee-loc').value,
+  }).then(d => { msg('ee-msg',d.error?'er':'ok',d.error||'OK'); reloadEvents(); });
 }
-
-function deleteEvent() {
-  if (!confirm('Supprimer cet événement et TOUS ses tickets ? Irréversible !')) return;
-  apiPost('delete_event', { event_id: currentEventId }).then(() => {
-    currentEventId = 0;
-    reloadEvents();
-  });
+function delEv() {
+  if(!confirm('Supprimer cet evenement et tous ses tickets ?'))return;
+  post('delete_event',{event_id:evId}).then(()=>{evId=0;reloadEvents();});
 }
-
 function reloadEvents() {
-  apiFetch('events').then(events => {
-    populateEvents(events);
-    document.getElementById('ev-select').value = currentEventId;
-  });
+  api('events').then(d => { fillEvents(d); document.getElementById('ev-sel').value=evId; });
 }
 
 // ── Stats ──
-function refreshAll() {
-  refreshStats();
-  loadGuests();
-}
-
+function refresh() { refreshStats(); loadGuests(); }
 function refreshStats() {
-  if (!currentEventId) return;
-  apiFetch('stats', `&event_id=${currentEventId}`).then(d => {
-    document.getElementById('s-total').textContent = d.total;
-    document.getElementById('s-in').textContent = d.checked_in;
-    document.getElementById('s-left').textContent = d.remaining;
+  if(!evId) return;
+  api('stats','&event_id='+evId).then(d => {
+    document.getElementById('st-t').textContent=d.total;
+    document.getElementById('st-i').textContent=d.checked_in;
+    document.getElementById('st-r').textContent=d.remaining;
   });
 }
 
 // ── Guest list ──
 function loadGuests() {
-  if (!currentEventId) return;
-  apiFetch('guests', `&event_id=${currentEventId}`).then(rows => {
-    allGuests = rows;
-    renderGuests(rows);
-  });
+  if(!evId) return;
+  api('guests','&event_id='+evId).then(d => { guests=d; renderGuests(d); });
 }
-
 function renderGuests(list) {
-  document.getElementById('guest-tbody').innerHTML = list.map(g => {
-    const isIn = g.checked_in == 1;
-    const time = g.checked_in_at ? new Date(g.checked_in_at).toLocaleTimeString('fr-FR') : '';
-    return `<tr>
-      <td><strong>${esc(g.prenom)} ${esc(g.nom)}</strong></td>
-      <td>${esc(g.ticket_label)}</td>
-      <td style="font-family:monospace;font-size:0.8rem;">${g.ticket_code}</td>
-      <td>${isIn ? `<span class="badge badge-ok">✅ ${time}</span>` : '<span class="badge badge-wait">En attente</span>'}</td>
-      <td class="actions">
-        ${isIn ? `<button class="btn btn-small" style="background:var(--warning);" onclick="resetOne('${g.ticket_code}')">↩️ Reset</button>` : ''}
-        <button class="btn btn-small btn-primary" onclick="window.open('api.php?action=ticket_pdf&code=${g.ticket_code}','_blank')">🎟️</button>
-        <button class="btn btn-small btn-danger" onclick="deleteTicket('${g.ticket_code}')">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">Aucun ticket</td></tr>';
+  document.getElementById('gtb').innerHTML = list.map(g => {
+    const ci = g.checked_in==1;
+    const tm = g.checked_in_at ? new Date(g.checked_in_at).toLocaleTimeString('fr-FR') : '';
+    return '<tr><td><b>'+esc(g.prenom)+' '+esc(g.nom)+'</b></td><td>'+esc(g.ticket_label)+'</td>'
+      +'<td style="font-family:monospace;font-size:.78rem">'+g.ticket_code+'</td>'
+      +'<td>'+(ci?'<span class="badge badge-ok">'+tm+'</span>':'<span class="badge badge-w">Attente</span>')+'</td>'
+      +'<td class="acts">'
+      +(ci?'<button class="btn btn-s" style="background:var(--warn)" onclick="resetOne(\''+g.ticket_code+'\')">Reset</button>':'')
+      +'<button class="btn btn-s bp" onclick="window.open(\'api.php?action=ticket_pdf&code='+g.ticket_code+'\')">Ticket</button>'
+      +'<button class="btn btn-s bd" onclick="delTicket(\''+g.ticket_code+'\')">X</button>'
+      +'</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--mut);padding:20px">Aucun ticket</td></tr>';
 }
-
-function filterTable() {
-  const q = document.getElementById('filter-input').value.toLowerCase();
-  renderGuests(q ? allGuests.filter(g => `${g.prenom} ${g.nom} ${g.ticket_code}`.toLowerCase().includes(q)) : allGuests);
+function filterGuests() {
+  const q = document.getElementById('filter').value.toLowerCase();
+  renderGuests(q ? guests.filter(g=>(g.prenom+' '+g.nom+' '+g.ticket_code).toLowerCase().includes(q)) : guests);
 }
 
 // ── Actions ──
-function resetOne(code) {
-  if (!confirm('Remettre ce check-in à zéro ?')) return;
-  apiPost('reset_checkin', { event_id: currentEventId, code }).then(d => {
-    if (d.error) alert(d.error); else refreshAll();
-  });
-}
-
-function deleteTicket(code) {
-  if (!confirm('Supprimer ce ticket ?')) return;
-  apiPost('delete_guest', { event_id: currentEventId, code }).then(d => {
-    if (d.error) alert(d.error); else refreshAll();
-  });
-}
+function resetOne(c){if(!confirm('Reset ce check-in ?'))return;post('reset_checkin',{event_id:evId,code:c}).then(()=>refresh());}
+function delTicket(c){if(!confirm('Supprimer ce ticket ?'))return;post('delete_guest',{event_id:evId,code:c}).then(()=>refresh());}
+function resetAll(){if(!confirm('TOUS les check-ins a zero ?'))return;post('reset_all',{event_id:evId}).then(d=>{msg('rst-msg',d.error?'er':'ok',d.error||d.reset+' reset');refresh();});}
 
 function addGuest() {
-  const nom = document.getElementById('ag-nom').value.trim();
-  const prenom = document.getElementById('ag-prenom').value.trim();
-  const nb = parseInt(document.getElementById('ag-nb').value) || 1;
-  if (!nom || !prenom) { showMsg('ag-msg','err','Nom et prénom requis'); return; }
-
-  apiPost('add_guest', { event_id: currentEventId, nom, prenom, nb_tickets: nb }).then(d => {
-    if (d.error) { showMsg('ag-msg','err',d.error); return; }
-    showMsg('ag-msg','ok', `✅ ${d.count} ticket(s) créé(s) — Codes: ${d.codes.join(', ')}`);
-    document.getElementById('ag-nom').value = '';
-    document.getElementById('ag-prenom').value = '';
-    document.getElementById('ag-nb').value = '1';
-    refreshAll();
-  });
-}
-
-function resetAll() {
-  if (!confirm('⚠️ Remettre TOUS les check-ins à zéro pour cet événement ?')) return;
-  apiPost('reset_all', { event_id: currentEventId }).then(d => {
-    showMsg('reset-msg', d.error ? 'err' : 'ok', d.error || `✅ ${d.reset} check-ins réinitialisés`);
-    refreshAll();
+  const nom=document.getElementById('ag-nom').value.trim();
+  const pre=document.getElementById('ag-pre').value.trim();
+  const nb=parseInt(document.getElementById('ag-nb').value)||1;
+  if(!nom||!pre){msg('ag-msg','er','Nom et prenom requis');return;}
+  post('add_guest',{event_id:evId,nom:nom,prenom:pre,nb_tickets:nb}).then(d => {
+    if(d.error){msg('ag-msg','er',d.error);return;}
+    const links=d.codes.map(c=>'<a href="api.php?action=ticket_pdf&code='+c+'" target="_blank">'+c+'</a>').join(' ');
+    msg('ag-msg','ok',d.count+' ticket(s): '+links);
+    document.getElementById('ag-nom').value='';document.getElementById('ag-pre').value='';document.getElementById('ag-nb').value='1';
+    refresh();
   });
 }
 
 // ── Import ──
-function importExcel() {
-  const file = document.getElementById('excel-file').files[0];
-  if (!file) { showMsg('excel-msg','err','Sélectionnez un fichier'); return; }
-  const reader = new FileReader();
-  reader.onload = function(e) {
+function importXl() {
+  const file=document.getElementById('xl-file').files[0];
+  if(!file){msg('xl-msg','er','Selectionnez un fichier');return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
     try {
-      const wb = XLSX.read(e.target.result, {type:'binary'});
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
-      const guests = [];
-      for (let i=1; i<rows.length; i++) {
-        const r = rows[i];
-        if (!r||!r[0]||!r[1]) continue;
-        guests.push({ nom: String(r[0]).trim(), prenom: String(r[1]).trim(), nb_tickets: parseInt(r[2])||1 });
-      }
-      if (!guests.length) { showMsg('excel-msg','err','Aucun invité trouvé'); return; }
-      showMsg('excel-msg','ok',`${guests.length} noms détectés, import...`);
-      apiPost('import', { event_id: currentEventId, guests }).then(d => {
-        showMsg('excel-msg', d.error?'err':'ok', d.error || `✅ ${d.imported} tickets créés`);
-        refreshAll();
-      });
-    } catch(err) { showMsg('excel-msg','err','Erreur: '+err.message); }
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+      const g=[];
+      for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[0]||!r[1])continue;g.push({nom:String(r[0]).trim(),prenom:String(r[1]).trim(),nb_tickets:parseInt(r[2])||1});}
+      if(!g.length){msg('xl-msg','er','Aucun invite');return;}
+      msg('xl-msg','ok',g.length+' noms, import...');
+      post('import',{event_id:evId,guests:g}).then(d=>{msg('xl-msg',d.error?'er':'ok',d.error||d.imported+' tickets crees');refresh();});
+    }catch(err){msg('xl-msg','er','Erreur: '+err.message);}
   };
   reader.readAsBinaryString(file);
 }
-
-function importJSON() {
-  let data;
-  try { data = JSON.parse(document.getElementById('import-data').value); }
-  catch(e) { showMsg('import-msg','err','JSON invalide'); return; }
-  apiPost('import', { event_id: currentEventId, guests: data }).then(d => {
-    showMsg('import-msg', d.error?'err':'ok', d.error || `✅ ${d.imported} tickets importés`);
-    refreshAll();
-  });
+function importJson() {
+  let d;try{d=JSON.parse(document.getElementById('json-data').value);}catch(e){msg('json-msg','er','JSON invalide');return;}
+  post('import',{event_id:evId,guests:d}).then(r=>{msg('json-msg',r.error?'er':'ok',r.error||r.imported+' tickets');refresh();});
 }
 
-function exportCSV() {
-  window.open(`${API}?action=export&event_id=${currentEventId}&password=${encodeURIComponent(adminPass)}`);
-}
+function doExport(){window.open(A+'?action=export&event_id='+evId+'&password='+encodeURIComponent(pw));}
+function openLog(){window.open(A+'?action=log&password='+encodeURIComponent(pw));}
 
-function openTicketsPage() {
-  window.open(`tickets.html?event_id=${currentEventId}`, '_blank');
-}
-
-// ── Helpers ──
-function showMsg(id, type, text) {
-  const el = document.getElementById(id); el.className = 'msg ' + type; el.textContent = text;
-}
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function msg(id,t,txt){const el=document.getElementById(id);el.className='msg '+t;el.innerHTML=txt;}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 </script>
 </body>
 </html>

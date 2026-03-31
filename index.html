@@ -6,308 +6,247 @@
 <title>Scanner — Lindy Tickets</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-  :root { --primary:#1a1a2e; --accent:#e94560; --success:#27ae60; --warning:#f39c12; --danger:#e74c3c; --bg:#f0f2f5; --card:#fff; --text:#333; --muted:#888; }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;padding-bottom:80px}
-  header{background:var(--primary);color:#fff;padding:14px 18px;text-align:center;position:sticky;top:0;z-index:100}
-  header h1{font-size:1.1rem;font-weight:600}
-  header .sub{font-size:.78rem;opacity:.7;margin-top:2px}
-  header .stats{display:flex;justify-content:center;gap:22px;margin-top:8px;font-size:.82rem;opacity:.9}
-  header .stats .num{font-weight:700;font-size:1.05rem}
+:root{--pri:#1a1a2e;--acc:#e94560;--ok:#27ae60;--warn:#f39c12;--err:#e74c3c;--bg:#f0f2f5;--card:#fff;--txt:#333;--mut:#888}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);min-height:100dvh;padding-bottom:80px}
+header{background:var(--pri);color:#fff;padding:14px 18px;text-align:center;position:sticky;top:0;z-index:100}
+header h1{font-size:1.1rem}
+header .sub{font-size:.78rem;opacity:.7;margin-top:2px}
+header .stats{display:flex;justify-content:center;gap:22px;margin-top:8px;font-size:.82rem}
+header .stats .n{font-weight:700;font-size:1.05rem}
 
-  /* Event picker */
-  #event-picker{padding:16px 20px;text-align:center}
-  #event-picker h2{font-size:1rem;margin-bottom:10px}
-  .ev-list{display:flex;flex-direction:column;gap:8px;max-width:400px;margin:0 auto}
-  .ev-btn{background:var(--card);border:2px solid #ddd;border-radius:12px;padding:14px 16px;cursor:pointer;text-align:left;transition:border-color .2s}
-  .ev-btn:active{border-color:var(--accent)}
-  .ev-btn .ev-name{font-weight:600;font-size:1rem}
-  .ev-btn .ev-info{font-size:.8rem;color:var(--muted);margin-top:2px}
+#picker{padding:20px;text-align:center}
+#picker h2{font-size:1rem;margin-bottom:12px}
+.ev-list{display:flex;flex-direction:column;gap:8px;max-width:400px;margin:0 auto}
+.ev-btn{background:var(--card);border:2px solid #ddd;border-radius:12px;padding:14px 16px;cursor:pointer;text-align:left}
+.ev-btn:active{border-color:var(--acc)}
+.ev-btn b{font-size:1rem;display:block}.ev-btn span{font-size:.8rem;color:var(--mut)}
 
-  /* Scanner */
-  #scanner-screen{display:none}
-  #camera-section{padding:10px 16px}
-  #reader{width:100%;max-width:400px;margin:0 auto}
-  .camera-help{background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:14px;margin:10px 16px;font-size:.85rem;line-height:1.4}
-  .camera-help .retry-btn{display:inline-block;margin-top:8px;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:.85rem;cursor:pointer}
+#main{display:none}
+#cam{padding:10px 16px}
+#reader{width:100%;max-width:400px;margin:0 auto}
+.cam-err{background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:14px;margin:10px 16px;font-size:.85rem;line-height:1.4}
+.cam-err button{display:inline-block;margin-top:8px;background:var(--pri);color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:.85rem;cursor:pointer}
 
-  .manual-entry{padding:10px 16px;display:flex;gap:8px}
-  .manual-entry input{flex:1;padding:10px 14px;border:2px solid #ddd;border-radius:10px;font-size:.95rem;font-family:monospace;text-transform:uppercase}
-  .manual-entry input:focus{border-color:var(--accent);outline:none}
-  .manual-entry button{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:.95rem;cursor:pointer}
+.sep{text-align:center;color:var(--mut);font-size:.78rem;margin:6px 16px;position:relative}
+.sep::before,.sep::after{content:'';position:absolute;top:50%;width:28%;height:1px;background:#ddd}
+.sep::before{left:6%}.sep::after{right:6%}
 
-  .section-sep{text-align:center;color:var(--muted);font-size:.78rem;margin:6px 16px;position:relative}
-  .section-sep::before,.section-sep::after{content:'';position:absolute;top:50%;width:28%;height:1px;background:#ddd}
-  .section-sep::before{left:6%}.section-sep::after{right:6%}
+.me{padding:10px 16px;display:flex;gap:8px}
+.me input{flex:1;padding:10px 14px;border:2px solid #ddd;border-radius:10px;font-size:.95rem;font-family:monospace;text-transform:uppercase}
+.me input:focus{border-color:var(--acc);outline:none}
+.me button{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:.95rem;cursor:pointer}
 
-  /* Result popup */
-  .result-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;justify-content:center;align-items:center;padding:20px}
-  .result-overlay.show{display:flex}
-  .result-card{background:var(--card);border-radius:16px;padding:28px 22px;text-align:center;width:100%;max-width:340px;box-shadow:0 16px 50px rgba(0,0,0,.25);animation:pop .2s ease}
-  @keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
-  .result-card .icon{font-size:3.2rem;margin-bottom:10px}
-  .result-card .status{font-size:1.2rem;font-weight:700;margin-bottom:4px}
-  .result-card .name{font-size:1.05rem;color:var(--text);margin-bottom:3px}
-  .result-card .detail{font-size:.85rem;color:var(--muted)}
-  .result-card.valid{border-top:4px solid var(--success)}.result-card.valid .status{color:var(--success)}
-  .result-card.duplicate{border-top:4px solid var(--warning)}.result-card.duplicate .status{color:var(--warning)}
-  .result-card.invalid{border-top:4px solid var(--danger)}.result-card.invalid .status{color:var(--danger)}
-  .result-card button{margin-top:16px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:11px 28px;font-size:.95rem;cursor:pointer;width:100%}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;justify-content:center;align-items:center;padding:20px}
+.overlay.show{display:flex}
+.rcard{background:var(--card);border-radius:16px;padding:28px 22px;text-align:center;width:100%;max-width:340px;box-shadow:0 16px 50px rgba(0,0,0,.25);animation:pop .2s ease}
+@keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+.rcard .ico{font-size:3.2rem;margin-bottom:10px}
+.rcard .st{font-size:1.2rem;font-weight:700;margin-bottom:4px}
+.rcard .nm{font-size:1.05rem;margin-bottom:3px}
+.rcard .dt{font-size:.85rem;color:var(--mut)}
+.rcard.valid{border-top:4px solid var(--ok)}.rcard.valid .st{color:var(--ok)}
+.rcard.dup{border-top:4px solid var(--warn)}.rcard.dup .st{color:var(--warn)}
+.rcard.bad{border-top:4px solid var(--err)}.rcard.bad .st{color:var(--err)}
+.rcard button{margin-top:16px;background:var(--pri);color:#fff;border:none;border-radius:8px;padding:11px;font-size:.95rem;cursor:pointer;width:100%}
 
-  /* History */
-  #history{padding:10px 16px}
-  #history h3{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-  .history-item{background:var(--card);border-radius:8px;padding:10px 14px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;font-size:.87rem}
-  .history-item .hi-name{font-weight:600}.history-item .hi-time{color:var(--muted);font-size:.78rem}
+#hist{padding:10px 16px}
+#hist h3{font-size:.8rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.hi{background:var(--card);border-radius:8px;padding:10px 14px;margin-bottom:5px;display:flex;justify-content:space-between;font-size:.87rem}
+.hi b{font-weight:600}.hi span{color:var(--mut);font-size:.78rem}
 
-  /* Search tab */
-  #search-section{display:none;padding:14px}
-  #search-input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:10px}
-  .guest-item{background:var(--card);border-radius:10px;padding:10px 14px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
-  .guest-item .gi-name{font-weight:500;font-size:.9rem}
-  .gi-checked{color:var(--success);font-size:.82rem}.gi-pending{color:var(--muted);font-size:.82rem}
-  .manual-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:.78rem;cursor:pointer;margin-left:6px}
-  .ticket-btn{background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:.78rem;cursor:pointer;margin-left:4px}
+#search{display:none;padding:14px}
+#search input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:10px}
+.gi{background:var(--card);border-radius:10px;padding:10px 14px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.gi b{font-size:.9rem}.gi .c{font-size:.78rem;color:var(--mut)}
+.gi .ok{color:var(--ok);font-size:.82rem}
+.gi .w{color:var(--mut);font-size:.82rem}
+.gi .mb{background:var(--acc);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:.78rem;cursor:pointer;margin-left:4px}
+.gi .tb{background:var(--pri);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:.78rem;cursor:pointer;margin-left:4px}
 
-  /* Add guest tab */
-  #add-section{display:none;padding:14px}
-  #add-section .card{background:var(--card);border-radius:12px;padding:18px}
-  #add-section label{font-size:.82rem;color:var(--muted);margin:6px 0 3px;display:block}
-  #add-section input{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:.9rem;margin-bottom:4px}
-  #add-section input:focus{border-color:var(--accent);outline:none}
+#add{display:none;padding:14px}
+#add .card{background:var(--card);border-radius:12px;padding:18px}
+#add label{display:block;font-size:.82rem;color:var(--mut);margin:6px 0 3px}
+#add input{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:.9rem}
+#add input:focus{border-color:var(--acc);outline:none}
+#add .ab{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:10px;font-size:.9rem;cursor:pointer;margin-top:10px;width:100%}
 
-  /* Nav */
-  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid #e0e0e0;display:none;justify-content:center;z-index:100}
-  .bottom-nav.show{display:flex}
-  .nav-btn{flex:1;padding:9px;border:none;background:transparent;font-size:.72rem;color:var(--muted);cursor:pointer;text-align:center}
-  .nav-btn.active{color:var(--accent);font-weight:600}
-  .nav-btn .nav-icon{font-size:1.3rem;display:block;margin-bottom:1px}
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid #e0e0e0;display:none;justify-content:center;z-index:100}
+.nav.show{display:flex}
+.nb{flex:1;padding:9px;border:none;background:transparent;font-size:.72rem;color:var(--mut);cursor:pointer;text-align:center}
+.nb.on{color:var(--acc);font-weight:600}
+.nb i{font-size:1.3rem;display:block;margin-bottom:1px;font-style:normal}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🎟️ <span id="event-name">Lindy Tickets</span></h1>
-  <div class="sub" id="event-sub"></div>
-  <div class="stats" id="stats-bar" style="display:none">
-    <div>Entrées <span class="num" id="stat-in">-</span></div>
-    <div>Restants <span class="num" id="stat-left">-</span></div>
-    <div>Total <span class="num" id="stat-total">-</span></div>
+  <h1 id="hdr-name">Lindy Tickets</h1>
+  <div class="sub" id="hdr-sub"></div>
+  <div class="stats" id="hdr-stats" style="display:none">
+    <div>Entrees <span class="n" id="s-i">-</span></div>
+    <div>Restants <span class="n" id="s-r">-</span></div>
+    <div>Total <span class="n" id="s-t">-</span></div>
   </div>
 </header>
 
-<!-- EVENT PICKER -->
-<div id="event-picker">
-  <h2>Choisir un événement</h2>
-  <div class="ev-list" id="ev-list">Chargement...</div>
+<!-- Event picker -->
+<div id="picker"><h2>Choisir un evenement</h2><div class="ev-list" id="ev-list">Chargement...</div></div>
+
+<!-- Main app -->
+<div id="main">
+  <div id="cam"><div id="reader"></div><div id="cam-err" style="display:none"></div></div>
+  <div class="sep">ou saisir le code</div>
+  <div class="me"><input type="text" id="mc" placeholder="Code ticket" maxlength="12" autocomplete="off"><button onclick="manSub()">OK</button></div>
+  <div id="hist"><h3>Derniers scans</h3><div id="hlist"></div></div>
 </div>
 
-<!-- SCANNER TAB -->
-<div id="scanner-screen">
-  <div id="camera-section">
-    <div id="reader"></div>
-    <div id="camera-error" style="display:none"></div>
-  </div>
-  <div class="section-sep">ou saisir le code</div>
-  <div class="manual-entry">
-    <input type="text" id="manual-code" placeholder="Code ticket" maxlength="12" autocomplete="off">
-    <button onclick="manualSubmit()">OK</button>
-  </div>
-  <div id="history"><h3>Derniers scans</h3><div id="history-list"></div></div>
-</div>
+<div id="search"><input type="text" id="sq" placeholder="Rechercher..." autocomplete="off"><div id="sres"></div></div>
+<div id="add"><div class="card"><h2 style="font-size:1rem;color:var(--pri);margin-bottom:8px">Ajouter un invite</h2><label>Prenom</label><input type="text" id="qa-p"><label>Nom</label><input type="text" id="qa-n"><label>Nb tickets</label><input type="number" id="qa-nb" value="1" min="1" max="20"><button class="ab" onclick="quickAdd()">Ajouter</button><div id="qa-msg" style="margin-top:8px;font-size:.85rem"></div></div></div>
 
-<!-- SEARCH TAB -->
-<div id="search-section">
-  <input type="text" id="search-input" placeholder="Rechercher un nom..." autocomplete="off">
-  <div id="search-results"></div>
-</div>
-
-<!-- ADD GUEST TAB -->
-<div id="add-section">
-  <div class="card">
-    <h2 style="font-size:1rem;color:var(--primary);margin-bottom:10px;">👤 Ajouter un invité</h2>
-    <label>Prénom</label><input type="text" id="qa-prenom" placeholder="Marie">
-    <label>Nom</label><input type="text" id="qa-nom" placeholder="Dupont">
-    <label>Nb tickets</label><input type="number" id="qa-nb" value="1" min="1" max="20">
-    <button class="manual-entry button" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:.9rem;cursor:pointer;margin-top:10px;width:100%;" onclick="quickAdd()">Ajouter et générer ticket(s)</button>
-    <div id="qa-msg" style="margin-top:8px;font-size:.85rem;"></div>
+<!-- Result popup -->
+<div class="overlay" id="ov">
+  <div class="rcard" id="rc">
+    <div class="ico" id="ri"></div>
+    <div class="st" id="rs"></div>
+    <div class="nm" id="rn"></div>
+    <div class="dt" id="rd"></div>
+    <button onclick="closeRes()">Continuer</button>
   </div>
 </div>
 
-<!-- RESULT POPUP -->
-<div class="result-overlay" id="result-overlay">
-  <div class="result-card" id="result-card">
-    <div class="icon" id="res-icon"></div>
-    <div class="status" id="res-status"></div>
-    <div class="name" id="res-name"></div>
-    <div class="detail" id="res-detail"></div>
-    <button onclick="closeResult()">Continuer</button>
-  </div>
-</div>
-
-<!-- NAV -->
-<div class="bottom-nav" id="bottom-nav">
-  <button class="nav-btn active" data-tab="scan" onclick="switchTab('scan')"><span class="nav-icon">📷</span>Scanner</button>
-  <button class="nav-btn" data-tab="list" onclick="switchTab('list')"><span class="nav-icon">📋</span>Liste</button>
-  <button class="nav-btn" data-tab="add" onclick="switchTab('add')"><span class="nav-icon">➕</span>Ajouter</button>
-  <button class="nav-btn" onclick="location='admin.html'"><span class="nav-icon">⚙️</span>Admin</button>
+<!-- Nav -->
+<div class="nav" id="nav">
+  <button class="nb on" data-t="scan" onclick="tab('scan')"><i>📷</i>Scanner</button>
+  <button class="nb" data-t="list" onclick="tab('list')"><i>📋</i>Liste</button>
+  <button class="nb" data-t="add" onclick="tab('add')"><i>➕</i>Ajouter</button>
+  <button class="nb" onclick="location='admin.html'"><i>⚙️</i>Admin</button>
 </div>
 
 <script>
-const API='api.php';
-let eventId=0, scannerPaused=false, scanner=null;
+var A='api.php',evId=0,paused=false,sc=null;
 
-// ── Init ──
-document.addEventListener('DOMContentLoaded', loadEvents);
+// Init
+fetch(A+'?action=events').then(r=>r.json()).then(evts=>{
+  var el=document.getElementById('ev-list');
+  if(!evts.length){el.innerHTML='<p style="color:var(--mut)">Aucun evenement. <a href="admin.html">Creez-en un</a>.</p>';return;}
+  if(evts.length===1){pick(evts[0]);return;}
+  el.innerHTML=evts.map(function(e){return '<div class="ev-btn" onclick=\'pick('+JSON.stringify(e).replace(/'/g,"&#39;")+')\' ><b>'+esc(e.name)+'</b><span>'+esc([e.event_date,e.location].filter(Boolean).join(' - '))+' — '+e.total_tickets+' tickets</span></div>';}).join('');
+}).catch(function(e){document.getElementById('ev-list').innerHTML='<p style="color:var(--err)">Erreur: '+esc(String(e))+'</p>';});
 
-async function loadEvents() {
-  const events = await fetch(API+'?action=events').then(r=>r.json());
-  const list = document.getElementById('ev-list');
-  if (!events.length) {
-    list.innerHTML = '<p style="color:var(--muted)">Aucun événement. <a href="admin.html">Créez-en un dans l\'admin</a>.</p>';
-    return;
-  }
-  if (events.length === 1) { selectEvent(events[0]); return; }
-  list.innerHTML = events.map(e => `
-    <div class="ev-btn" onclick='selectEvent(${JSON.stringify(e)})'>
-      <div class="ev-name">${esc(e.name)}</div>
-      <div class="ev-info">${esc([e.event_date,e.location].filter(Boolean).join(' • '))} — ${e.total_tickets} tickets, ${e.checked_in} entrées</div>
-    </div>
-  `).join('');
+function pick(ev){
+  evId=ev.id;
+  document.getElementById('hdr-name').textContent=ev.name||'Scanner';
+  document.getElementById('hdr-sub').textContent=[ev.event_date,ev.location].filter(Boolean).join('  —  ');
+  document.getElementById('picker').style.display='none';
+  document.getElementById('main').style.display='block';
+  document.getElementById('hdr-stats').style.display='flex';
+  document.getElementById('nav').classList.add('show');
+  reStats();loadHist();initCam();
+  setInterval(reStats,30000);
 }
 
-function selectEvent(ev) {
-  eventId = ev.id;
-  document.getElementById('event-name').textContent = ev.name || 'Scanner';
-  document.getElementById('event-sub').textContent = [ev.event_date,ev.location].filter(Boolean).join('  •  ');
-  document.getElementById('event-picker').style.display = 'none';
-  document.getElementById('scanner-screen').style.display = 'block';
-  document.getElementById('stats-bar').style.display = 'flex';
-  document.getElementById('bottom-nav').classList.add('show');
-  refreshStats(); loadHistory(); initCamera();
-  setInterval(refreshStats, 30000);
+function reStats(){
+  if(!evId)return;
+  fetch(A+'?action=stats&event_id='+evId).then(function(r){return r.json();}).then(function(d){
+    document.getElementById('s-i').textContent=d.checked_in;
+    document.getElementById('s-r').textContent=d.remaining;
+    document.getElementById('s-t').textContent=d.total;
+  }).catch(function(){});
 }
 
-// ── Stats ──
-async function refreshStats() {
-  try {
-    const d = await fetch(`${API}?action=stats&event_id=${eventId}`).then(r=>r.json());
-    document.getElementById('stat-in').textContent = d.checked_in;
-    document.getElementById('stat-left').textContent = d.remaining;
-    document.getElementById('stat-total').textContent = d.total;
-  } catch(_){}
+// Camera
+function initCam(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){camErr();return;}
+  sc=new Html5Qrcode('reader');
+  sc.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:250}},onScan,function(){}).catch(function(){camErr();});
 }
-
-// ── Camera ──
-function initCamera() {
-  if (!navigator.mediaDevices?.getUserMedia) { showCamErr(); return; }
-  scanner = new Html5Qrcode("reader");
-  scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:250}},onScan,()=>{}).catch(()=>showCamErr());
-}
-function showCamErr() {
+function camErr(){
   document.getElementById('reader').style.display='none';
-  const el = document.getElementById('camera-error'); el.style.display='block';
-  el.innerHTML=`<div class="camera-help"><strong>📷 Caméra non disponible</strong><p style="margin-top:4px;">Cadenas 🔒 → Caméra → Autoriser, puis rechargez.</p><p style="margin-top:6px;color:var(--success);font-weight:600;">✅ Saisie manuelle disponible ci-dessous</p><button class="retry-btn" onclick="location.reload()">🔄 Réessayer</button></div>`;
+  var el=document.getElementById('cam-err');el.style.display='block';
+  el.innerHTML='<div class="cam-err"><b>Camera non disponible</b><p style="margin-top:4px">Cadenas → Camera → Autoriser, puis rechargez.</p><p style="margin-top:6px;color:var(--ok);font-weight:600">La saisie manuelle fonctionne.</p><button onclick="location.reload()">Reessayer</button></div>';
 }
 
-// ── Scan ──
-function onScan(decoded) {
-  if (scannerPaused) return;
-  scannerPaused = true;
-  if (navigator.vibrate) navigator.vibrate(100);
-  processTicket(decoded.trim().toUpperCase(), 'scanner');
+// Scan
+function onScan(d){if(paused)return;paused=true;if(navigator.vibrate)navigator.vibrate(100);doCheckin(d.trim().toUpperCase(),'scanner');}
+function manSub(){var i=document.getElementById('mc'),c=i.value.trim().toUpperCase();if(!c)return;if(navigator.vibrate)navigator.vibrate(50);doCheckin(c,'manual');i.value='';}
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.activeElement.id==='mc')manSub();if(e.key==='Escape')closeRes();});
+
+function doCheckin(code,method){
+  var rc=document.getElementById('rc'),ri=document.getElementById('ri'),rs=document.getElementById('rs'),rn=document.getElementById('rn'),rd=document.getElementById('rd');
+  rc.className='rcard';
+  fetch(A+'?action=checkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:evId,code:code,method:method})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.status==='unknown'){rc.classList.add('bad');ri.textContent='❌';rs.textContent='TICKET INCONNU';rn.textContent='';rd.textContent='Code: '+code;}
+    else if(d.status==='duplicate'){var t=d.checked_in_at?new Date(d.checked_in_at).toLocaleTimeString('fr-FR'):'';rc.classList.add('dup');ri.textContent='⚠️';rs.textContent='DEJA SCANNE';rn.textContent=d.prenom+' '+d.nom;rd.textContent='Ticket '+d.ticket_label+' — '+t;}
+    else if(d.status==='valid'){rc.classList.add('valid');ri.textContent='✅';rs.textContent='ENTREE VALIDEE';rn.textContent=d.prenom+' '+d.nom;rd.textContent='Ticket '+d.ticket_label;reStats();loadHist();}
+    else{rc.classList.add('bad');ri.textContent='❓';rs.textContent='ERREUR';rn.textContent='';rd.textContent=JSON.stringify(d);}
+  })
+  .catch(function(){rc.classList.add('bad');ri.textContent='🔌';rs.textContent='ERREUR RESEAU';rn.textContent='';rd.textContent='Verifiez la connexion';});
+  document.getElementById('ov').classList.add('show');
 }
-function manualSubmit() {
-  const inp = document.getElementById('manual-code');
-  const code = inp.value.trim().toUpperCase();
-  if (!code) return;
-  if (navigator.vibrate) navigator.vibrate(50);
-  processTicket(code, 'manual'); inp.value = '';
+function closeRes(){document.getElementById('ov').classList.remove('show');paused=false;}
+
+// History
+function loadHist(){
+  fetch(A+'?action=history&event_id='+evId+'&n=15').then(function(r){return r.json();}).then(function(rows){
+    document.getElementById('hlist').innerHTML=rows.map(function(h){
+      var t=new Date(h.checked_in_at).toLocaleTimeString('fr-FR');
+      return '<div class="hi"><b>'+esc(h.prenom)+' '+esc(h.nom)+'</b><span>'+t+'</span></div>';
+    }).join('')||'<div style="text-align:center;color:var(--mut);padding:16px">Aucun scan</div>';
+  }).catch(function(){});
 }
-document.addEventListener('keydown', e => {
-  if (e.key==='Enter' && document.activeElement.id==='manual-code') manualSubmit();
-  if (e.key==='Escape') closeResult();
+
+// Search
+var sTimer;
+document.getElementById('sq').addEventListener('input',function(){
+  clearTimeout(sTimer);var q=this.value.trim();
+  sTimer=setTimeout(function(){doSearch(q);},300);
 });
-
-async function processTicket(code, method) {
-  const card=document.getElementById('result-card'), icon=document.getElementById('res-icon'),
-        status=document.getElementById('res-status'), name=document.getElementById('res-name'),
-        detail=document.getElementById('res-detail');
-  card.className='result-card';
-  try {
-    const d = await fetch(`${API}?action=checkin`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:eventId,code,method})}).then(r=>r.json());
-    if (d.status==='unknown') { card.classList.add('invalid'); icon.textContent='❌'; status.textContent='TICKET INCONNU'; name.textContent=''; detail.textContent='Code: '+code; }
-    else if (d.status==='duplicate') { const t=new Date(d.checked_in_at).toLocaleTimeString('fr-FR'); card.classList.add('duplicate'); icon.textContent='⚠️'; status.textContent='DÉJÀ SCANNÉ'; name.textContent=d.prenom+' '+d.nom; detail.textContent='Ticket '+d.ticket_label+' — à '+t; }
-    else if (d.status==='valid') { card.classList.add('valid'); icon.textContent='✅'; status.textContent='ENTRÉE VALIDÉE'; name.textContent=d.prenom+' '+d.nom; detail.textContent='Ticket '+d.ticket_label; refreshStats(); loadHistory(); }
-  } catch(_) { card.classList.add('invalid'); icon.textContent='🔌'; status.textContent='ERREUR RÉSEAU'; name.textContent=''; detail.textContent='Vérifiez la connexion'; }
-  document.getElementById('result-overlay').classList.add('show');
+function doSearch(q){
+  var act=q?'search':'guests',p=q?'&q='+encodeURIComponent(q):'';
+  fetch(A+'?action='+act+'&event_id='+evId+p).then(function(r){return r.json();}).then(function(rows){renderList(rows);}).catch(function(){});
 }
-function closeResult() { document.getElementById('result-overlay').classList.remove('show'); scannerPaused=false; }
-
-// ── History ──
-async function loadHistory() {
-  try {
-    const rows = await fetch(`${API}?action=history&event_id=${eventId}&n=15`).then(r=>r.json());
-    document.getElementById('history-list').innerHTML = rows.map(h => {
-      const t=new Date(h.checked_in_at).toLocaleTimeString('fr-FR');
-      return `<div class="history-item"><div class="hi-name">${esc(h.prenom)} ${esc(h.nom)}</div><div class="hi-time">${t}</div></div>`;
-    }).join('') || '<div style="text-align:center;color:var(--muted);padding:16px;">Aucun scan</div>';
-  } catch(_){}
+function renderList(list){
+  document.getElementById('sres').innerHTML=list.map(function(g){
+    var ci=g.checked_in==1;
+    return '<div class="gi"><div><b>'+esc(g.prenom)+' '+esc(g.nom)+'</b><div class="c">Ticket '+esc(g.ticket_label)+' — '+g.ticket_code+'</div></div><div>'
+      +(ci?'<span class="ok">Entre</span>':'<span class="w">Attente</span><button class="mb" onclick="doCheckin(\''+g.ticket_code+'\',\'manual\')">Valider</button>')
+      +'<button class="tb" onclick="window.open(\'api.php?action=ticket_pdf&code='+g.ticket_code+'\')">Ticket</button>'
+      +'</div></div>';
+  }).join('')||'<div style="text-align:center;color:var(--mut);padding:16px">Aucun resultat</div>';
 }
 
-// ── Search ──
-let sTimeout;
-document.getElementById('search-input').addEventListener('input',function(){
-  clearTimeout(sTimeout); const q=this.value.trim();
-  sTimeout=setTimeout(()=>searchGuests(q),300);
-});
-async function searchGuests(q) {
-  const action=q?'search':'guests', params=q?`&q=${encodeURIComponent(q)}`:'';
-  const rows=await fetch(`${API}?action=${action}&event_id=${eventId}${params}`).then(r=>r.json());
-  renderGuestList(rows);
-}
-function renderGuestList(list) {
-  document.getElementById('search-results').innerHTML=list.map(g=>{
-    const isIn=g.checked_in==1;
-    return `<div class="guest-item"><div><div class="gi-name">${esc(g.prenom)} ${esc(g.nom)}</div><div style="font-size:.78rem;color:var(--muted);">Ticket ${esc(g.ticket_label)} — ${g.ticket_code}</div></div><div>${isIn
-      ?'<span class="gi-checked">✅ Entré</span>'
-      :`<span class="gi-pending">En attente</span><button class="manual-btn" onclick="processTicket('${g.ticket_code}','manual')">Valider</button>`}<button class="ticket-btn" onclick="window.open('api.php?action=ticket_pdf&code=${g.ticket_code}','_blank')">🎟️</button></div></div>`;
-  }).join('')||'<div style="text-align:center;color:var(--muted);padding:16px;">Aucun résultat</div>';
-}
-
-// ── Quick add guest ──
-async function quickAdd() {
-  const nom=document.getElementById('qa-nom').value.trim();
-  const prenom=document.getElementById('qa-prenom').value.trim();
-  const nb=parseInt(document.getElementById('qa-nb').value)||1;
-  const msg=document.getElementById('qa-msg');
-  if (!nom||!prenom){msg.innerHTML='<span style="color:var(--danger)">Nom et prénom requis</span>';return;}
-
-  // Need admin password — prompt once
-  let pass = sessionStorage.getItem('adminPass');
-  if (!pass) { pass = prompt('Mot de passe admin :'); if (!pass) return; sessionStorage.setItem('adminPass', pass); }
-
-  const d = await fetch(`${API}?action=add_guest`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:eventId,nom,prenom,nb_tickets:nb,password:pass})}).then(r=>r.json());
-  if (d.error) { msg.innerHTML=`<span style="color:var(--danger)">${esc(d.error)}</span>`; sessionStorage.removeItem('adminPass'); return; }
-
-  const links = d.codes.map(c=>`<a href="api.php?action=ticket_pdf&code=${c}" target="_blank">🎟️ ${c}</a>`).join(' ');
-  msg.innerHTML=`<span style="color:var(--success)">✅ ${d.count} ticket(s) créé(s)</span><br>${links}`;
-  document.getElementById('qa-nom').value='';
-  document.getElementById('qa-prenom').value='';
-  document.getElementById('qa-nb').value='1';
-  refreshStats();
+// Quick add
+function quickAdd(){
+  var nom=document.getElementById('qa-n').value.trim();
+  var pre=document.getElementById('qa-p').value.trim();
+  var nb=parseInt(document.getElementById('qa-nb').value)||1;
+  var m=document.getElementById('qa-msg');
+  if(!nom||!pre){m.innerHTML='<span style="color:var(--err)">Nom et prenom requis</span>';return;}
+  var pass=sessionStorage.getItem('ap');
+  if(!pass){pass=prompt('Mot de passe admin:');if(!pass)return;sessionStorage.setItem('ap',pass);}
+  fetch(A+'?action=add_guest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:evId,nom:nom,prenom:pre,nb_tickets:nb,password:pass})})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.error){m.innerHTML='<span style="color:var(--err)">'+esc(d.error)+'</span>';sessionStorage.removeItem('ap');return;}
+    var links=d.codes.map(function(c){return '<a href="api.php?action=ticket_pdf&code='+c+'" target="_blank">'+c+'</a>';}).join(' ');
+    m.innerHTML='<span style="color:var(--ok)">'+d.count+' ticket(s)</span> '+links;
+    document.getElementById('qa-n').value='';document.getElementById('qa-p').value='';document.getElementById('qa-nb').value='1';
+    reStats();
+  }).catch(function(e){m.innerHTML='<span style="color:var(--err)">Erreur</span>';});
 }
 
-// ── Tabs ──
-function switchTab(tab) {
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
-  document.getElementById('scanner-screen').style.display=tab==='scan'?'block':'none';
-  document.getElementById('search-section').style.display=tab==='list'?'block':'none';
-  document.getElementById('add-section').style.display=tab==='add'?'block':'none';
-  if (tab==='list') searchGuests('');
+// Tabs
+function tab(t){
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on');});
+  var btn=document.querySelector('[data-t="'+t+'"]');if(btn)btn.classList.add('on');
+  document.getElementById('main').style.display=t==='scan'?'block':'none';
+  document.getElementById('search').style.display=t==='list'?'block':'none';
+  document.getElementById('add').style.display=t==='add'?'block':'none';
+  if(t==='list')doSearch('');
 }
-function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 </script>
 </body>
 </html>
