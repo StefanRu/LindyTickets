@@ -124,7 +124,7 @@ header .stats .n{font-weight:700;font-size:1.05rem}
 </div>
 
 <script>
-var A='api.php',evId=0,paused=false,sc=null;
+var A='api.php',evId=0,paused=false,sc=null,currentListQuery='',pendingCheckins={};
 
 // Init
 fetch(A+'?action=events').then(r=>r.json()).then(evts=>{
@@ -173,6 +173,9 @@ function manSub(){var i=document.getElementById('mc'),c=i.value.trim().toUpperCa
 document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.activeElement.id==='mc')manSub();if(e.key==='Escape')closeRes();});
 
 function doCheckin(code,method){
+  if(pendingCheckins[code]) return;
+  pendingCheckins[code]=true;
+  refreshListIfVisible();
   var rc=document.getElementById('rc'),ri=document.getElementById('ri'),rs=document.getElementById('rs'),rn=document.getElementById('rn'),rd=document.getElementById('rd');
   rc.className='rcard';
   fetch(A+'?action=checkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:evId,code:code,method:method})})
@@ -180,10 +183,11 @@ function doCheckin(code,method){
   .then(function(d){
     if(d.status==='unknown'){rc.classList.add('bad');ri.textContent='❌';rs.textContent='TICKET INCONNU';rn.textContent='';rd.textContent='Code: '+code;}
     else if(d.status==='duplicate'){var t=d.checked_in_at?new Date(d.checked_in_at).toLocaleTimeString('fr-FR'):'';rc.classList.add('dup');ri.textContent='⚠️';rs.textContent='DEJA SCANNE';rn.textContent=d.prenom+' '+d.nom;rd.textContent='Ticket '+d.ticket_label+' — '+t;}
-    else if(d.status==='valid'){rc.classList.add('valid');ri.textContent='✅';rs.textContent='ENTREE VALIDEE';rn.textContent=d.prenom+' '+d.nom;rd.textContent='Ticket '+d.ticket_label;reStats();loadHist();}
+    else if(d.status==='valid'){rc.classList.add('valid');ri.textContent='✅';rs.textContent='ENTREE VALIDEE';rn.textContent=d.prenom+' '+d.nom;rd.textContent='Ticket '+d.ticket_label;reStats();loadHist();refreshListIfVisible();}
     else{rc.classList.add('bad');ri.textContent='❓';rs.textContent='ERREUR';rn.textContent='';rd.textContent=JSON.stringify(d);}
   })
-  .catch(function(){rc.classList.add('bad');ri.textContent='🔌';rs.textContent='ERREUR RESEAU';rn.textContent='';rd.textContent='Verifiez la connexion';});
+  .catch(function(){rc.classList.add('bad');ri.textContent='🔌';rs.textContent='ERREUR RESEAU';rn.textContent='';rd.textContent='Verifiez la connexion';})
+  .finally(function(){delete pendingCheckins[code];refreshListIfVisible();});
   document.getElementById('ov').classList.add('show');
 }
 function closeRes(){document.getElementById('ov').classList.remove('show');paused=false;}
@@ -205,17 +209,22 @@ document.getElementById('sq').addEventListener('input',function(){
   sTimer=setTimeout(function(){doSearch(q);},300);
 });
 function doSearch(q){
+  currentListQuery=q;
   var act=q?'search':'guests',p=q?'&q='+encodeURIComponent(q):'';
   fetch(A+'?action='+act+'&event_id='+evId+p).then(function(r){return r.json();}).then(function(rows){renderList(rows);}).catch(function(){});
 }
 function renderList(list){
   document.getElementById('sres').innerHTML=list.map(function(g){
     var ci=g.checked_in==1;
+    var busy=!!pendingCheckins[g.ticket_code];
     return '<div class="gi"><div><b>'+esc(g.prenom)+' '+esc(g.nom)+'</b><div class="c">Ticket '+esc(g.ticket_label)+' — '+g.ticket_code+'</div></div><div>'
-      +(ci?'<span class="ok">Entre</span>':'<span class="w">Attente</span><button class="mb" onclick="doCheckin(\''+g.ticket_code+'\',\'manual\')">Valider</button>')
+      +(ci?'<span class="ok">Entre</span>':'<span class="w">Attente</span><button class="mb" onclick="doCheckin(\''+g.ticket_code+'\',\'manual\')"'+(busy?' disabled':'')+'>'+(busy?'...':'Valider')+'</button>')
       +'<button class="tb" onclick="window.open(\'api.php?action=ticket_pdf&code='+g.ticket_code+'\')">Ticket</button>'
       +'</div></div>';
   }).join('')||'<div style="text-align:center;color:var(--mut);padding:16px">Aucun resultat</div>';
+}
+function refreshListIfVisible(){
+  if(document.getElementById('search').style.display==='block') doSearch(currentListQuery);
 }
 
 // Quick add
