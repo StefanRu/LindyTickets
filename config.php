@@ -1,5 +1,5 @@
 <?php
-define('DB_HOST', 
+define('DB_HOST', 'localhost');         // Hôte BDD
 define('DB_NAME', 'dbs15500217');        // Nom de la BDD
 define('DB_USER', ''); // Utilisateur BDD
 define('DB_PASS', ''); // Mot de passe BDD
