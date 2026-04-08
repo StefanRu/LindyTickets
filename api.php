@@ -51,6 +51,23 @@ function newCode(): string {
     return strtoupper(bin2hex(random_bytes(6)));
 }
 
+function insertTicketWithUniqueCode(PDOStatement $ins, int $eid, string $nom, string $pre, string $ticketLabel): string {
+    $attempts = 0;
+    while ($attempts < 5) {
+        $code = newCode();
+        try {
+            $ins->execute([$eid, $code, $nom, $pre, $ticketLabel]);
+            return $code;
+        } catch (PDOException $e) {
+            if ($e->getCode() !== '23000') {
+                throw $e;
+            }
+            $attempts++;
+        }
+    }
+    throw new RuntimeException('Impossible de générer un code ticket unique.');
+}
+
 // ── CORS ──
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -68,10 +85,10 @@ try {
     route($db, $action);
 } catch (PDOException $e) {
     wlog('ERROR', 'PDO: ' . $e->getMessage());
-    sendJson(['error' => 'Erreur BDD: ' . $e->getMessage()], 500);
+    sendJson(['error' => 'Erreur BDD'], 500);
 } catch (Throwable $e) {
     wlog('ERROR', 'Exception: ' . $e->getMessage(), ['file' => $e->getFile(), 'line' => $e->getLine()]);
-    sendJson(['error' => 'Erreur: ' . $e->getMessage()], 500);
+    sendJson(['error' => 'Erreur serveur'], 500);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -232,7 +249,7 @@ function route(PDO $db, string $action): void {
             $nb  = max(1, (int)($g['nb_tickets'] ?? 1));
             if (!$nom || !$pre) continue;
             for ($i = 1; $i <= $nb; $i++) {
-                $ins->execute([$eid, newCode(), $nom, $pre, "$i/$nb"]);
+                insertTicketWithUniqueCode($ins, $eid, $nom, $pre, "$i/$nb");
                 $count++;
             }
         }
@@ -253,8 +270,7 @@ function route(PDO $db, string $action): void {
         $ins = $db->prepare("INSERT INTO tickets (event_id,ticket_code,nom,prenom,ticket_label) VALUES (?,?,?,?,?)");
         $codes = [];
         for ($i = 1; $i <= $nb; $i++) {
-            $c = newCode();
-            $ins->execute([$eid, $c, $nom, $pre, "$i/$nb"]);
+            $c = insertTicketWithUniqueCode($ins, $eid, $nom, $pre, "$i/$nb");
             $codes[] = $c;
         }
         wlog('INFO', "Added $pre $nom ($nb) to event $eid");
