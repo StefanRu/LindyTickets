@@ -239,8 +239,8 @@ function renderList(list){
     var codeEsc=esc(code);
     var codeJs=code.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return '<div class="gi"><div><b>'+esc(g.prenom)+' '+esc(g.nom)+'</b><div class="c">Ticket '+esc(g.ticket_label)+' — '+codeEsc+'</div></div><div>'
-      +(ci?'<span class="ok">Entre</span>':'<span class="w">Attente</span><button class="mb" onclick="doCheckin(\''+codeJs+'\',\'manual\')">Valider</button>')
-      +'<button class="tb" onclick="window.open(\'api.php?action=ticket_pdf&code='+encodeURIComponent(code)+'\',\'_blank\',\'noopener\')">Ticket</button>'
+      +(ci?'<span class="ok">'+t('entered')+'</span>':'<span class="w">'+t('waiting')+'</span><button class="mb" onclick="doCheckin(\''+codeJs+'\',\'manual\')">'+t('validate')+'</button>')
+      +'<button class="tb" onclick="window.open(\'api.php?action=ticket_pdf&code='+encodeURIComponent(code)+'\',\'_blank\',\'noopener\')">'+t('ticket')+'</button>'
       +'</div></div>';
   }).join('')||'<div style="text-align:center;color:var(--mut);padding:16px">'+t('no_result')+'</div>';
 }
