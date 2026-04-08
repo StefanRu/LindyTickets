@@ -68,6 +68,11 @@ function insertTicketWithUniqueCode(PDOStatement $ins, int $eid, string $nom, st
     throw new RuntimeException('Impossible de générer un code ticket unique.');
 }
 
+function normalizeTicketCount(mixed $rawCount): int {
+    $count = (int)$rawCount;
+    return min(20, max(1, $count));
+}
+
 // ── CORS ──
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -238,22 +243,29 @@ function route(PDO $db, string $action): void {
         if (empty($guests)) sendJson(['error' => 'Liste vide'], 400);
 
         $db->beginTransaction();
-        if ($clear) {
-            $db->prepare("DELETE FROM tickets WHERE event_id=?")->execute([$eid]);
-        }
-        $ins = $db->prepare("INSERT INTO tickets (event_id,ticket_code,nom,prenom,ticket_label) VALUES (?,?,?,?,?)");
-        $count = 0;
-        foreach ($guests as $g) {
-            $nom = trim($g['nom'] ?? '');
-            $pre = trim($g['prenom'] ?? '');
-            $nb  = max(1, (int)($g['nb_tickets'] ?? 1));
-            if (!$nom || !$pre) continue;
-            for ($i = 1; $i <= $nb; $i++) {
-                insertTicketWithUniqueCode($ins, $eid, $nom, $pre, "$i/$nb");
-                $count++;
+        try {
+            if ($clear) {
+                $db->prepare("DELETE FROM tickets WHERE event_id=?")->execute([$eid]);
             }
+            $ins = $db->prepare("INSERT INTO tickets (event_id,ticket_code,nom,prenom,ticket_label) VALUES (?,?,?,?,?)");
+            $count = 0;
+            foreach ($guests as $g) {
+                $nom = trim($g['nom'] ?? '');
+                $pre = trim($g['prenom'] ?? '');
+                $nb  = normalizeTicketCount($g['nb_tickets'] ?? 1);
+                if (!$nom || !$pre) continue;
+                for ($i = 1; $i <= $nb; $i++) {
+                    insertTicketWithUniqueCode($ins, $eid, $nom, $pre, "$i/$nb");
+                    $count++;
+                }
+            }
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
         }
-        $db->commit();
         wlog('INFO', "Import event $eid: $count tickets");
         sendJson(['status' => 'ok', 'imported' => $count]);
 
@@ -263,7 +275,7 @@ function route(PDO $db, string $action): void {
         $eid = (int)($b['event_id'] ?? 0);
         $nom = trim($b['nom'] ?? '');
         $pre = trim($b['prenom'] ?? '');
-        $nb  = max(1, (int)($b['nb_tickets'] ?? 1));
+        $nb  = normalizeTicketCount($b['nb_tickets'] ?? 1);
         if (!$eid) sendJson(['error' => 'event_id requis'], 400);
         if (!$nom || !$pre) sendJson(['error' => 'Nom et prenom requis'], 400);
 
@@ -303,7 +315,9 @@ function route(PDO $db, string $action): void {
         if (!is_dir($dir)) mkdir($dir, 0755, true);
         $filename = 'logo_' . $eid . '_' . time() . '.' . $ext;
         $path = $dir . '/' . $filename;
-        move_uploaded_file($_FILES['logo']['tmp_name'], $path);
+        if (!move_uploaded_file($_FILES['logo']['tmp_name'], $path)) {
+            sendJson(['error' => 'Echec upload'], 500);
+        }
 
         $url = SITE_URL . '/uploads/' . $filename;
         $db->prepare("UPDATE events SET logo_url=? WHERE id=?")->execute([$url, $eid]);
