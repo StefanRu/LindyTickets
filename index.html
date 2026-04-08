@@ -124,18 +124,22 @@ header .stats .n{font-weight:700;font-size:1.05rem}
 </div>
 
 <script>
-var A='api.php',evId=0,paused=false,sc=null;
+var A='api.php',evId=0,paused=false,sc=null,statsTimer=null;
 
 // Init
 fetch(A+'?action=events').then(r=>r.json()).then(evts=>{
   var el=document.getElementById('ev-list');
   if(!evts.length){el.innerHTML='<p style="color:var(--mut)">Aucun evenement. <a href="admin.html">Creez-en un</a>.</p>';return;}
+  var last=parseInt(localStorage.getItem('lt_event_id')||'0',10);
+  var prev=evts.find(function(e){return parseInt(e.id,10)===last;});
+  if(prev){pick(prev);return;}
   if(evts.length===1){pick(evts[0]);return;}
   el.innerHTML=evts.map(function(e){return '<div class="ev-btn" onclick=\'pick('+JSON.stringify(e).replace(/'/g,"&#39;")+')\' ><b>'+esc(e.name)+'</b><span>'+esc([e.event_date,e.location].filter(Boolean).join(' - '))+' — '+e.total_tickets+' tickets</span></div>';}).join('');
 }).catch(function(e){document.getElementById('ev-list').innerHTML='<p style="color:var(--err)">Erreur: '+esc(String(e))+'</p>';});
 
 function pick(ev){
   evId=ev.id;
+  localStorage.setItem('lt_event_id',String(ev.id));
   document.getElementById('hdr-name').textContent=ev.name||'Scanner';
   document.getElementById('hdr-sub').textContent=[ev.event_date,ev.location].filter(Boolean).join('  —  ');
   document.getElementById('picker').style.display='none';
@@ -143,7 +147,8 @@ function pick(ev){
   document.getElementById('hdr-stats').style.display='flex';
   document.getElementById('nav').classList.add('show');
   reStats();loadHist();initCam();
-  setInterval(reStats,30000);
+  if(statsTimer)clearInterval(statsTimer);
+  statsTimer=setInterval(reStats,30000);
 }
 
 function reStats(){
@@ -211,9 +216,12 @@ function doSearch(q){
 function renderList(list){
   document.getElementById('sres').innerHTML=list.map(function(g){
     var ci=g.checked_in==1;
-    return '<div class="gi"><div><b>'+esc(g.prenom)+' '+esc(g.nom)+'</b><div class="c">Ticket '+esc(g.ticket_label)+' — '+g.ticket_code+'</div></div><div>'
-      +(ci?'<span class="ok">Entre</span>':'<span class="w">Attente</span><button class="mb" onclick="doCheckin(\''+g.ticket_code+'\',\'manual\')">Valider</button>')
-      +'<button class="tb" onclick="window.open(\'api.php?action=ticket_pdf&code='+g.ticket_code+'\')">Ticket</button>'
+    var code=String(g.ticket_code||'');
+    var codeEsc=esc(code);
+    var codeJs=code.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<div class="gi"><div><b>'+esc(g.prenom)+' '+esc(g.nom)+'</b><div class="c">Ticket '+esc(g.ticket_label)+' — '+codeEsc+'</div></div><div>'
+      +(ci?'<span class="ok">Entre</span>':'<span class="w">Attente</span><button class="mb" onclick="doCheckin(\''+codeJs+'\',\'manual\')">Valider</button>')
+      +'<button class="tb" onclick="window.open(\'api.php?action=ticket_pdf&code='+encodeURIComponent(code)+'\',\'_blank\',\'noopener\')">Ticket</button>'
       +'</div></div>';
   }).join('')||'<div style="text-align:center;color:var(--mut);padding:16px">Aucun resultat</div>';
 }
@@ -230,7 +238,7 @@ function quickAdd(){
   fetch(A+'?action=add_guest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:evId,nom:nom,prenom:pre,nb_tickets:nb,password:pass})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error){m.innerHTML='<span style="color:var(--err)">'+esc(d.error)+'</span>';sessionStorage.removeItem('ap');return;}
-    var links=d.codes.map(function(c){return '<a href="api.php?action=ticket_pdf&code='+c+'" target="_blank">'+c+'</a>';}).join(' ');
+    var links=d.codes.map(function(c){var ec=esc(c);return '<a href="api.php?action=ticket_pdf&code='+encodeURIComponent(c)+'" target="_blank" rel="noopener">'+ec+'</a>';}).join(' ');
     m.innerHTML='<span style="color:var(--ok)">'+d.count+' ticket(s)</span> '+links;
     document.getElementById('qa-n').value='';document.getElementById('qa-p').value='';document.getElementById('qa-nb').value='1';
     reStats();

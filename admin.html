@@ -200,11 +200,16 @@ function fillEvents(list) {
   const sel = document.getElementById('ev-sel');
   if (!list.length) { sel.innerHTML='<option value="">Aucun evenement</option>'; return; }
   sel.innerHTML = list.map(e => '<option value="'+e.id+'">'+esc(e.name)+' ('+e.total_tickets+' tickets)</option>').join('');
-  evId = list[0].id;
+  const saved = parseInt(localStorage.getItem('lt_event_id')||'0',10);
+  const found = list.find(e => parseInt(e.id,10) === saved);
+  evId = found ? found.id : list[0].id;
+  localStorage.setItem('lt_event_id', String(evId));
+  sel.value = String(evId);
   refresh();
 }
 function onEvChange() {
   evId = parseInt(document.getElementById('ev-sel').value)||0;
+  if (evId) localStorage.setItem('lt_event_id', String(evId));
   document.getElementById('edit-form').classList.add('hidden');
   if (evId) refresh();
 }
@@ -265,7 +270,18 @@ function delEv() {
   post('delete_event',{event_id:evId}).then(()=>{evId=0;reloadEvents();});
 }
 function reloadEvents() {
-  api('events').then(d => { fillEvents(d); document.getElementById('ev-sel').value=evId; });
+  api('events').then(d => {
+    fillEvents(d);
+    var preferred = parseInt(localStorage.getItem('lt_event_id') || String(evId), 10);
+    var hasPreferred = d.some(function(e){ return parseInt(e.id,10)===preferred; });
+    if (hasPreferred) {
+      evId = preferred;
+      document.getElementById('ev-sel').value = String(preferred);
+      refresh();
+    } else {
+      document.getElementById('ev-sel').value=evId;
+    }
+  });
 }
 
 // ── Stats ──
@@ -288,13 +304,16 @@ function renderGuests(list) {
   document.getElementById('gtb').innerHTML = list.map(g => {
     const ci = g.checked_in==1;
     const tm = g.checked_in_at ? new Date(g.checked_in_at).toLocaleTimeString('fr-FR') : '';
+    const code = String(g.ticket_code||'');
+    const codeJs = code.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const codeUrl = encodeURIComponent(code);
     return '<tr><td><b>'+esc(g.prenom)+' '+esc(g.nom)+'</b></td><td>'+esc(g.ticket_label)+'</td>'
-      +'<td style="font-family:monospace;font-size:.78rem">'+g.ticket_code+'</td>'
+      +'<td style="font-family:monospace;font-size:.78rem">'+esc(code)+'</td>'
       +'<td>'+(ci?'<span class="badge badge-ok">'+tm+'</span>':'<span class="badge badge-w">Attente</span>')+'</td>'
       +'<td class="acts">'
-      +(ci?'<button class="btn btn-s" style="background:var(--warn)" onclick="resetOne(\''+g.ticket_code+'\')">Reset</button>':'')
-      +'<button class="btn btn-s bp" onclick="window.open(\'api.php?action=ticket_pdf&code='+g.ticket_code+'\')">Ticket</button>'
-      +'<button class="btn btn-s bd" onclick="delTicket(\''+g.ticket_code+'\')">X</button>'
+      +(ci?'<button class="btn btn-s" style="background:var(--warn)" onclick="resetOne(\''+codeJs+'\')">Reset</button>':'')
+      +'<button class="btn btn-s bp" onclick="window.open(\'api.php?action=ticket_pdf&code='+codeUrl+'\',\'_blank\',\'noopener\')">Ticket</button>'
+      +'<button class="btn btn-s bd" onclick="delTicket(\''+codeJs+'\')">X</button>'
       +'</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--mut);padding:20px">Aucun ticket</td></tr>';
 }
@@ -315,7 +334,10 @@ function addGuest() {
   if(!nom||!pre){msg('ag-msg','er','Nom et prenom requis');return;}
   post('add_guest',{event_id:evId,nom:nom,prenom:pre,nb_tickets:nb}).then(d => {
     if(d.error){msg('ag-msg','er',d.error);return;}
-    const links=d.codes.map(c=>'<a href="api.php?action=ticket_pdf&code='+c+'" target="_blank">'+c+'</a>').join(' ');
+    const links=d.codes.map(c=>{
+      const ec=esc(c), u=encodeURIComponent(c);
+      return '<a href="api.php?action=ticket_pdf&code='+u+'" target="_blank" rel="noopener">'+ec+'</a>';
+    }).join(' ');
     msg('ag-msg','ok',d.count+' ticket(s): '+links);
     document.getElementById('ag-nom').value='';document.getElementById('ag-pre').value='';document.getElementById('ag-nb').value='1';
     refresh();
