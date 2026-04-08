@@ -3,21 +3,24 @@ on:
   push:
     branches: [main]
 jobs:
-  ftp:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
-          server: home140792214.1and1-data.host
+          server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASS }}
-          server-dir: /www/lindy/
+          port: 22
+          local_path: './*'
+          remote_path: '/www/lindy'
+          sftp_only: true
           exclude: |
-            **/.git*
-            **/.git*/**
             config.php
             debug.log
             install.php
             upgrade.php
             uploads/**
+            .git*
+            .github/**
