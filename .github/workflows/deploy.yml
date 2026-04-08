@@ -2,25 +2,35 @@ name: Deploy
 on:
   push:
     branches: [main]
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: wlixcc/SFTP-Deploy-Action@v1.2.4
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
-          port: 22
-          local_path: './*'
-          remote_path: '/www/lindy'
-          sftp_only: true
-          exclude: |
-            config.php
-            debug.log
-            install.php
-            upgrade.php
-            uploads/**
-            .git*
-            .github/**
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Deploy via SFTP
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
+          SFTP_PASS: ${{ secrets.SFTP_PASS }}
+        run: |
+          lftp -c "
+          set sftp:auto-confirm yes;
+          set net:timeout 10;
+          set net:max-retries 3;
+          open -u \"$SFTP_USER\",\"$SFTP_PASS\" sftp://$SFTP_HOST;
+          mirror -R --verbose \
+            --exclude-glob config.php \
+            --exclude-glob debug.log \
+            --exclude-glob install.php \
+            --exclude-glob upgrade.php \
+            --exclude-glob .git* \
+            --exclude-glob .github \
+            --exclude-glob uploads/ \
+            --exclude-glob README.md \
+            ./ /www/lindy/
+          "
