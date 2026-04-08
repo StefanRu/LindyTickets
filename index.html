@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Scanner — Lindy Tickets</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="ui-translations.js"></script>
 <style>
 :root{--pri:#1a1a2e;--acc:#e94560;--ok:#27ae60;--warn:#f39c12;--err:#e74c3c;--bg:#f0f2f5;--card:#fff;--txt:#333;--mut:#888}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -81,28 +82,35 @@ header .stats .n{font-weight:700;font-size:1.05rem}
 <body>
 
 <header>
+  <div style="position:absolute;right:10px;top:10px">
+    <select id="lang" onchange="setLang(this.value)" style="width:auto;padding:4px 8px;font-size:.78rem">
+      <option value="fr">FR</option>
+      <option value="en">EN</option>
+      <option value="de">DE</option>
+    </select>
+  </div>
   <h1 id="hdr-name">Lindy Tickets</h1>
   <div class="sub" id="hdr-sub"></div>
   <div class="stats" id="hdr-stats" style="display:none">
-    <div>Entrees <span class="n" id="s-i">-</span></div>
-    <div>Restants <span class="n" id="s-r">-</span></div>
-    <div>Total <span class="n" id="s-t">-</span></div>
+    <div><span data-i18n="entries">Entrees</span> <span class="n" id="s-i">-</span></div>
+    <div><span data-i18n="remaining">Restants</span> <span class="n" id="s-r">-</span></div>
+    <div><span data-i18n="total">Total</span> <span class="n" id="s-t">-</span></div>
   </div>
 </header>
 
 <!-- Event picker -->
-<div id="picker"><h2>Choisir un evenement</h2><div class="ev-list" id="ev-list">Chargement...</div></div>
+<div id="picker"><h2 data-i18n="choose_event">Choisir un evenement</h2><div class="ev-list" id="ev-list">Chargement...</div></div>
 
 <!-- Main app -->
 <div id="main">
   <div id="cam"><div id="reader"></div><div id="cam-err" style="display:none"></div></div>
-  <div class="sep">ou saisir le code</div>
+  <div class="sep" data-i18n="or_enter_code">ou saisir le code</div>
   <div class="me"><input type="text" id="mc" placeholder="Code ticket" maxlength="12" autocomplete="off"><button onclick="manSub()">OK</button></div>
-  <div id="hist"><h3>Derniers scans</h3><div id="hlist"></div></div>
+  <div id="hist"><h3 data-i18n="last_scans">Derniers scans</h3><div id="hlist"></div></div>
 </div>
 
 <div id="search"><input type="text" id="sq" placeholder="Rechercher..." autocomplete="off"><div id="sres"></div></div>
-<div id="add"><div class="card"><h2 style="font-size:1rem;color:var(--pri);margin-bottom:8px">Ajouter un invite</h2><label>Prenom</label><input type="text" id="qa-p"><label>Nom</label><input type="text" id="qa-n"><label>Nb tickets</label><input type="number" id="qa-nb" value="1" min="1" max="20"><button class="ab" onclick="quickAdd()">Ajouter</button><div id="qa-msg" style="margin-top:8px;font-size:.85rem"></div></div></div>
+<div id="add"><div class="card"><h2 style="font-size:1rem;color:var(--pri);margin-bottom:8px" data-i18n="add_guest">Ajouter un invite</h2><label data-i18n="first_name">Prenom</label><input type="text" id="qa-p"><label data-i18n="last_name">Nom</label><input type="text" id="qa-n"><label data-i18n="num_tickets">Nb tickets</label><input type="number" id="qa-nb" value="1" min="1" max="20"><button class="ab" onclick="quickAdd()" data-i18n="add">Ajouter</button><div id="qa-msg" style="margin-top:8px;font-size:.85rem"></div></div></div>
 
 <!-- Result popup -->
 <div class="overlay" id="ov">
@@ -111,28 +119,38 @@ header .stats .n{font-weight:700;font-size:1.05rem}
     <div class="st" id="rs"></div>
     <div class="nm" id="rn"></div>
     <div class="dt" id="rd"></div>
-    <button onclick="closeRes()">Continuer</button>
+    <button onclick="closeRes()" data-i18n="continue">Continuer</button>
   </div>
 </div>
 
 <!-- Nav -->
 <div class="nav" id="nav">
-  <button class="nb on" data-t="scan" onclick="tab('scan')"><i>📷</i>Scanner</button>
-  <button class="nb" data-t="list" onclick="tab('list')"><i>📋</i>Liste</button>
-  <button class="nb" data-t="add" onclick="tab('add')"><i>➕</i>Ajouter</button>
+  <button class="nb on" data-t="scan" onclick="tab('scan')"><i>📷</i><span data-i18n="scanner">Scanner</span></button>
+  <button class="nb" data-t="list" onclick="tab('list')"><i>📋</i><span data-i18n="list">Liste</span></button>
+  <button class="nb" data-t="add" onclick="tab('add')"><i>➕</i><span data-i18n="add">Ajouter</span></button>
   <button class="nb" onclick="location='admin.html'"><i>⚙️</i>Admin</button>
 </div>
 
 <script>
 var A='api.php',evId=0,paused=false,sc=null,statsTimer=null,checkinInFlight=false;
+var lang=LTTranslations.normalizeLang(localStorage.getItem('lt_lang')||'fr');
+function t(k){return LTTranslations.t(lang,k);}
+function setLang(l){lang=LTTranslations.normalizeLang(l);localStorage.setItem('lt_lang',lang);applyI18n();if(evId){loadHist();refreshListIfOpen();}}
+function applyI18n(){
+  document.documentElement.lang=lang;
+  document.getElementById('lang').value=lang;
+  document.querySelectorAll('[data-i18n]').forEach(function(el){el.textContent=t(el.dataset.i18n);});
+  document.getElementById('sq').placeholder=t('search');
+}
+applyI18n();
 
 // Init
 fetch(A+'?action=events').then(r=>r.json()).then(evts=>{
   var el=document.getElementById('ev-list');
-  if(!evts.length){el.innerHTML='<p style="color:var(--mut)">Aucun evenement. <a href="admin.html">Creez-en un</a>.</p>';return;}
+  if(!evts.length){el.innerHTML='<p style="color:var(--mut)">'+t('no_event')+' <a href="admin.html">Admin</a>.</p>';return;}
   if(evts.length===1){pick(evts[0]);return;}
   el.innerHTML=evts.map(function(e){return '<div class="ev-btn" onclick=\'pick('+JSON.stringify(e).replace(/'/g,"&#39;")+')\' ><b>'+esc(e.name)+'</b><span>'+esc([e.event_date,e.location].filter(Boolean).join(' - '))+' — '+e.total_tickets+' tickets</span></div>';}).join('');
-}).catch(function(e){document.getElementById('ev-list').innerHTML='<p style="color:var(--err)">Erreur: '+esc(String(e))+'</p>';});
+}).catch(function(e){document.getElementById('ev-list').innerHTML='<p style="color:var(--err)">'+t('error')+': '+esc(String(e))+'</p>';});
 
 function pick(ev){
   evId=ev.id;
@@ -166,7 +184,7 @@ function initCam(){
 function camErr(){
   document.getElementById('reader').style.display='none';
   var el=document.getElementById('cam-err');el.style.display='block';
-  el.innerHTML='<div class="cam-err"><b>Camera non disponible</b><p style="margin-top:4px">Cadenas → Camera → Autoriser, puis rechargez.</p><p style="margin-top:6px;color:var(--ok);font-weight:600">La saisie manuelle fonctionne.</p><button onclick="location.reload()">Reessayer</button></div>';
+  el.innerHTML='<div class="cam-err"><b>'+t('camera_unavailable')+'</b><p style="margin-top:4px">'+t('camera_hint')+'</p><p style="margin-top:6px;color:var(--ok);font-weight:600">'+t('manual_works')+'</p><button onclick="location.reload()">'+t('retry')+'</button></div>';
 }
 
 // Scan
@@ -182,13 +200,13 @@ function doCheckin(code,method){
   fetch(A+'?action=checkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:evId,code:code,method:method})})
   .then(function(r){return r.json();})
   .then(function(d){
-    if(d.status==='unknown'){rc.classList.add('bad');ri.textContent='❌';rs.textContent='TICKET INCONNU';rn.textContent='';rd.textContent='Code: '+code;}
-    else if(d.status==='duplicate'){var t=d.checked_in_at?new Date(d.checked_in_at).toLocaleTimeString('fr-FR'):'';rc.classList.add('dup');ri.textContent='⚠️';rs.textContent='DEJA SCANNE';rn.textContent=d.prenom+' '+d.nom;rd.textContent='Ticket '+d.ticket_label+' — '+t;}
-    else if(d.status==='valid'){rc.classList.add('valid');ri.textContent='✅';rs.textContent='ENTREE VALIDEE';rn.textContent=d.prenom+' '+d.nom;rd.textContent='Ticket '+d.ticket_label;reStats();loadHist();}
-    else{rc.classList.add('bad');ri.textContent='❓';rs.textContent='ERREUR';rn.textContent='';rd.textContent=JSON.stringify(d);}
+    if(d.status==='unknown'){rc.classList.add('bad');ri.textContent='❌';rs.textContent=t('unknown_ticket');rn.textContent='';rd.textContent='Code: '+code;}
+    else if(d.status==='duplicate'){var tt=d.checked_in_at?new Date(d.checked_in_at).toLocaleTimeString(LTTranslations.locale(lang)):'';rc.classList.add('dup');ri.textContent='⚠️';rs.textContent=t('already_scanned');rn.textContent=d.prenom+' '+d.nom;rd.textContent='Ticket '+d.ticket_label+' — '+tt;}
+    else if(d.status==='valid'){rc.classList.add('valid');ri.textContent='✅';rs.textContent=t('entry_validated');rn.textContent=d.prenom+' '+d.nom;rd.textContent='Ticket '+d.ticket_label;reStats();loadHist();}
+    else{rc.classList.add('bad');ri.textContent='❓';rs.textContent=t('error');rn.textContent='';rd.textContent=JSON.stringify(d);}
     refreshListIfOpen();
   })
-  .catch(function(){rc.classList.add('bad');ri.textContent='🔌';rs.textContent='ERREUR RESEAU';rn.textContent='';rd.textContent='Verifiez la connexion';})
+  .catch(function(){rc.classList.add('bad');ri.textContent='🔌';rs.textContent=t('network_error');rn.textContent='';rd.textContent=t('check_connection');})
   .finally(function(){checkinInFlight=false;});
   document.getElementById('ov').classList.add('show');
 }
@@ -198,9 +216,9 @@ function closeRes(){document.getElementById('ov').classList.remove('show');pause
 function loadHist(){
   fetch(A+'?action=history&event_id='+evId+'&n=15').then(function(r){return r.json();}).then(function(rows){
     document.getElementById('hlist').innerHTML=rows.map(function(h){
-      var t=new Date(h.checked_in_at).toLocaleTimeString('fr-FR');
-      return '<div class="hi"><b>'+esc(h.prenom)+' '+esc(h.nom)+'</b><span>'+t+'</span></div>';
-    }).join('')||'<div style="text-align:center;color:var(--mut);padding:16px">Aucun scan</div>';
+      var tt=new Date(h.checked_in_at).toLocaleTimeString(LTTranslations.locale(lang));
+      return '<div class="hi"><b>'+esc(h.prenom)+' '+esc(h.nom)+'</b><span>'+tt+'</span></div>';
+    }).join('')||'<div style="text-align:center;color:var(--mut);padding:16px">'+t('no_scans')+'</div>';
   }).catch(function(){});
 }
 
@@ -224,7 +242,7 @@ function renderList(list){
       +(ci?'<span class="ok">Entre</span>':'<span class="w">Attente</span><button class="mb" onclick="doCheckin(\''+codeJs+'\',\'manual\')">Valider</button>')
       +'<button class="tb" onclick="window.open(\'api.php?action=ticket_pdf&code='+encodeURIComponent(code)+'\',\'_blank\',\'noopener\')">Ticket</button>'
       +'</div></div>';
-  }).join('')||'<div style="text-align:center;color:var(--mut);padding:16px">Aucun resultat</div>';
+  }).join('')||'<div style="text-align:center;color:var(--mut);padding:16px">'+t('no_result')+'</div>';
 }
 
 function refreshListIfOpen(){
@@ -238,9 +256,9 @@ function quickAdd(){
   var pre=document.getElementById('qa-p').value.trim();
   var nb=parseInt(document.getElementById('qa-nb').value)||1;
   var m=document.getElementById('qa-msg');
-  if(!nom||!pre){m.innerHTML='<span style="color:var(--err)">Nom et prenom requis</span>';return;}
+  if(!nom||!pre){m.innerHTML='<span style="color:var(--err)">'+t('name_required')+'</span>';return;}
   var pass=sessionStorage.getItem('ap');
-  if(!pass){pass=prompt('Mot de passe admin:');if(!pass)return;sessionStorage.setItem('ap',pass);}
+  if(!pass){pass=prompt(t('admin_password'));if(!pass)return;sessionStorage.setItem('ap',pass);}
   fetch(A+'?action=add_guest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:evId,nom:nom,prenom:pre,nb_tickets:nb,password:pass})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error){m.innerHTML='<span style="color:var(--err)">'+esc(d.error)+'</span>';sessionStorage.removeItem('ap');return;}
