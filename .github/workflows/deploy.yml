@@ -14,9 +14,9 @@ jobs:
 
       - name: Deploy via SFTP
         env:
-          SFTP_HOST: ${{ secrets.SFTP_HOST }}
-          SFTP_USER: ${{ secrets.SFTP_USER }}
-          SFTP_PASS: ${{ secrets.SFTP_PASS }}
+          SFTP_HOST: ${{ secrets.FTP_HOST }}
+          SFTP_USER: ${{ secrets.FTP_USER }}
+          SFTP_PASS: ${{ secrets.FTP_PASS }}
         run: |
           lftp -c "
           set sftp:auto-confirm yes;
