@@ -130,9 +130,6 @@ var A='api.php',evId=0,paused=false,sc=null,statsTimer=null,checkinInFlight=fals
 fetch(A+'?action=events').then(r=>r.json()).then(evts=>{
   var el=document.getElementById('ev-list');
   if(!evts.length){el.innerHTML='<p style="color:var(--mut)">Aucun evenement. <a href="admin.html">Creez-en un</a>.</p>';return;}
-  var last=parseInt(localStorage.getItem('lt_event_id')||'0',10);
-  var prev=evts.find(function(e){return parseInt(e.id,10)===last;});
-  if(prev){pick(prev);return;}
   if(evts.length===1){pick(evts[0]);return;}
   el.innerHTML=evts.map(function(e){return '<div class="ev-btn" onclick=\'pick('+JSON.stringify(e).replace(/'/g,"&#39;")+')\' ><b>'+esc(e.name)+'</b><span>'+esc([e.event_date,e.location].filter(Boolean).join(' - '))+' — '+e.total_tickets+' tickets</span></div>';}).join('');
 }).catch(function(e){document.getElementById('ev-list').innerHTML='<p style="color:var(--err)">Erreur: '+esc(String(e))+'</p>';});
