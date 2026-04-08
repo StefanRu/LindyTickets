@@ -1,0 +1,23 @@
+name: Deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  ftp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: home140792214.1and1-data.host
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          server-dir: /www/lindy/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            config.php
+            debug.log
+            install.php
+            upgrade.php
+            uploads/**
