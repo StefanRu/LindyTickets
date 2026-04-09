@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin — Lindy Tickets</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="ui-translations.js"></script>
 <style>
 :root{--pri:#1a1a2e;--acc:#e94560;--ok:#27ae60;--warn:#f39c12;--err:#e74c3c;--bg:#f0f2f5;--card:#fff;--txt:#333;--mut:#888}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -42,17 +43,24 @@ textarea{height:130px;font-family:monospace;font-size:.82rem}
 <body>
 
 <header>
-  <h1>Admin — Lindy Tickets</h1>
-  <a href="index.html">Scanner</a>
+  <h1 data-i18n="title_admin">Admin — Lindy Tickets</h1>
+  <div style="display:flex;gap:10px;align-items:center">
+    <select id="lang" onchange="setLang(this.value)" style="width:auto;padding:4px 8px;font-size:.78rem">
+      <option value="fr">FR</option>
+      <option value="en">EN</option>
+      <option value="de">DE</option>
+    </select>
+    <a href="index.html" data-i18n="scanner_link">Scanner</a>
+  </div>
 </header>
 
 <!-- LOGIN -->
 <div id="login" class="box">
   <div class="card">
-    <h2>Connexion</h2>
-    <label>Mot de passe admin</label>
+    <h2 data-i18n="login">Connexion</h2>
+    <label data-i18n="admin_password">Mot de passe admin</label>
     <input type="password" id="pw" placeholder="..." onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btn bp" style="width:100%" onclick="doLogin()">Connexion</button>
+    <button class="btn bp" style="width:100%" onclick="doLogin()" data-i18n="login">Connexion</button>
     <div class="msg" id="login-msg"></div>
   </div>
 </div>
@@ -174,6 +182,11 @@ textarea{height:130px;font-family:monospace;font-size:.82rem}
 <script>
 const A = 'api.php';
 let pw = '', evId = 0, guests = [];
+let lang = LTTranslations.normalizeLang(localStorage.getItem('lt_lang') || 'fr');
+function t(k){ return LTTranslations.t(lang, k); }
+function setLang(l){ lang = LTTranslations.normalizeLang(l); localStorage.setItem('lt_lang',lang); applyI18n(); refresh(); }
+function applyI18n(){ document.documentElement.lang = lang; document.getElementById('lang').value = lang; document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n)); }
+applyI18n();
 
 // ── Auth ──
 function doLogin() {
@@ -198,13 +211,18 @@ function post(act, body) {
 // ── Events ──
 function fillEvents(list) {
   const sel = document.getElementById('ev-sel');
-  if (!list.length) { sel.innerHTML='<option value="">Aucun evenement</option>'; return; }
+  if (!list.length) { sel.innerHTML='<option value="">'+t('no_event')+'</option>'; return; }
   sel.innerHTML = list.map(e => '<option value="'+e.id+'">'+esc(e.name)+' ('+e.total_tickets+' tickets)</option>').join('');
-  evId = list[0].id;
+  const saved = parseInt(localStorage.getItem('lt_event_id')||'0',10);
+  const found = list.find(e => parseInt(e.id,10) === saved);
+  evId = found ? found.id : list[0].id;
+  localStorage.setItem('lt_event_id', String(evId));
+  sel.value = String(evId);
   refresh();
 }
 function onEvChange() {
   evId = parseInt(document.getElementById('ev-sel').value)||0;
+  if (evId) localStorage.setItem('lt_event_id', String(evId));
   document.getElementById('edit-form').classList.add('hidden');
   if (evId) refresh();
 }
@@ -248,7 +266,7 @@ function saveEv() {
 }
 function uploadLogo() {
   var file = document.getElementById('ee-logo-file').files[0];
-  if (!file) { msg('ee-msg','er','Selectionnez un fichier'); return; }
+  if (!file) { msg('ee-msg','er',t('select_file')); return; }
   var fd = new FormData();
   fd.append('logo', file);
   fd.append('event_id', evId);
@@ -261,11 +279,22 @@ function uploadLogo() {
   });
 }
 function delEv() {
-  if(!confirm('Supprimer cet evenement et tous ses tickets ?'))return;
+  if(!confirm(t('confirm_delete_event')))return;
   post('delete_event',{event_id:evId}).then(()=>{evId=0;reloadEvents();});
 }
 function reloadEvents() {
-  api('events').then(d => { fillEvents(d); document.getElementById('ev-sel').value=evId; });
+  api('events').then(d => {
+    fillEvents(d);
+    var preferred = parseInt(localStorage.getItem('lt_event_id') || String(evId), 10);
+    var hasPreferred = d.some(function(e){ return parseInt(e.id,10)===preferred; });
+    if (hasPreferred) {
+      evId = preferred;
+      document.getElementById('ev-sel').value = String(preferred);
+      refresh();
+    } else {
+      document.getElementById('ev-sel').value=evId;
+    }
+  });
 }
 
 // ── Stats ──
@@ -288,13 +317,16 @@ function renderGuests(list) {
   document.getElementById('gtb').innerHTML = list.map(g => {
     const ci = g.checked_in==1;
     const tm = g.checked_in_at ? new Date(g.checked_in_at).toLocaleTimeString('fr-FR') : '';
+    const code = String(g.ticket_code||'');
+    const codeJs = code.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const codeUrl = encodeURIComponent(code);
     return '<tr><td><b>'+esc(g.prenom)+' '+esc(g.nom)+'</b></td><td>'+esc(g.ticket_label)+'</td>'
-      +'<td style="font-family:monospace;font-size:.78rem">'+g.ticket_code+'</td>'
+      +'<td style="font-family:monospace;font-size:.78rem">'+esc(code)+'</td>'
       +'<td>'+(ci?'<span class="badge badge-ok">'+tm+'</span>':'<span class="badge badge-w">Attente</span>')+'</td>'
       +'<td class="acts">'
-      +(ci?'<button class="btn btn-s" style="background:var(--warn)" onclick="resetOne(\''+g.ticket_code+'\')">Reset</button>':'')
-      +'<button class="btn btn-s bp" onclick="window.open(\'api.php?action=ticket_pdf&code='+g.ticket_code+'\')">Ticket</button>'
-      +'<button class="btn btn-s bd" onclick="delTicket(\''+g.ticket_code+'\')">X</button>'
+      +(ci?'<button class="btn btn-s" style="background:var(--warn)" onclick="resetOne(\''+codeJs+'\')">Reset</button>':'')
+      +'<button class="btn btn-s bp" onclick="window.open(\'api.php?action=ticket_pdf&code='+codeUrl+'\',\'_blank\',\'noopener\')">Ticket</button>'
+      +'<button class="btn btn-s bd" onclick="delTicket(\''+codeJs+'\')">X</button>'
       +'</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--mut);padding:20px">Aucun ticket</td></tr>';
 }
@@ -304,18 +336,21 @@ function filterGuests() {
 }
 
 // ── Actions ──
-function resetOne(c){if(!confirm('Reset ce check-in ?'))return;post('reset_checkin',{event_id:evId,code:c}).then(()=>refresh());}
-function delTicket(c){if(!confirm('Supprimer ce ticket ?'))return;post('delete_guest',{event_id:evId,code:c}).then(()=>refresh());}
-function resetAll(){if(!confirm('TOUS les check-ins a zero ?'))return;post('reset_all',{event_id:evId}).then(d=>{msg('rst-msg',d.error?'er':'ok',d.error||d.reset+' reset');refresh();});}
+function resetOne(c){if(!confirm(t('confirm_reset_one')))return;post('reset_checkin',{event_id:evId,code:c}).then(()=>refresh());}
+function delTicket(c){if(!confirm(t('confirm_delete_ticket')))return;post('delete_guest',{event_id:evId,code:c}).then(()=>refresh());}
+function resetAll(){if(!confirm(t('confirm_reset_all')))return;post('reset_all',{event_id:evId}).then(d=>{msg('rst-msg',d.error?'er':'ok',d.error||d.reset+' reset');refresh();});}
 
 function addGuest() {
   const nom=document.getElementById('ag-nom').value.trim();
   const pre=document.getElementById('ag-pre').value.trim();
   const nb=parseInt(document.getElementById('ag-nb').value)||1;
-  if(!nom||!pre){msg('ag-msg','er','Nom et prenom requis');return;}
+  if(!nom||!pre){msg('ag-msg','er',t('name_required'));return;}
   post('add_guest',{event_id:evId,nom:nom,prenom:pre,nb_tickets:nb}).then(d => {
     if(d.error){msg('ag-msg','er',d.error);return;}
-    const links=d.codes.map(c=>'<a href="api.php?action=ticket_pdf&code='+c+'" target="_blank">'+c+'</a>').join(' ');
+    const links=d.codes.map(c=>{
+      const ec=esc(c), u=encodeURIComponent(c);
+      return '<a href="api.php?action=ticket_pdf&code='+u+'" target="_blank" rel="noopener">'+ec+'</a>';
+    }).join(' ');
     msg('ag-msg','ok',d.count+' ticket(s): '+links);
     document.getElementById('ag-nom').value='';document.getElementById('ag-pre').value='';document.getElementById('ag-nb').value='1';
     refresh();
@@ -325,7 +360,7 @@ function addGuest() {
 // ── Import ──
 function importXl() {
   const file=document.getElementById('xl-file').files[0];
-  if(!file){msg('xl-msg','er','Selectionnez un fichier');return;}
+  if(!file){msg('xl-msg','er',t('select_file'));return;}
   const reader=new FileReader();
   reader.onload=function(e){
     try {
@@ -341,7 +376,7 @@ function importXl() {
   reader.readAsBinaryString(file);
 }
 function importJson() {
-  let d;try{d=JSON.parse(document.getElementById('json-data').value);}catch(e){msg('json-msg','er','JSON invalide');return;}
+  let d;try{d=JSON.parse(document.getElementById('json-data').value);}catch(e){msg('json-msg','er',t('invalid_json'));return;}
   post('import',{event_id:evId,guests:d}).then(r=>{msg('json-msg',r.error?'er':'ok',r.error||r.imported+' tickets');refresh();});
 }
 

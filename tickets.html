@@ -58,14 +58,33 @@ body{font-family:Georgia,'Times New Roman',serif;background:#f5f0e6}
   <h1>Tous les Tickets</h1>
   <button onclick="window.print()">Imprimer / PDF</button>
   <button onclick="load()">Recharger</button>
+  <select id="ev-sel" onchange="onEventChange()" style="margin-left:8px;padding:6px 8px;border-radius:6px;border:none;max-width:280px"></select>
   <div id="info">Chargement...</div>
   <a href="admin.html">Admin</a>
 </div>
 <div class="wrap" id="wrap"><div style="padding:40px;color:#888;font-family:system-ui">Chargement...</div></div>
 <script>
-var A='api.php',eid=new URLSearchParams(location.search).get('event_id')||1;
+var A='api.php',eid=parseInt(new URLSearchParams(location.search).get('event_id')||localStorage.getItem('lt_event_id')||'0',10)||0;
+
+function loadEvents(){
+  return fetch(A+'?action=events').then(function(r){return r.json();}).then(function(events){
+    var sel=document.getElementById('ev-sel');
+    if(!events.length){
+      sel.innerHTML='<option value="">Aucun evenement</option>';
+      document.getElementById('info').textContent='Aucun evenement';
+      return null;
+    }
+    sel.innerHTML=events.map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join('');
+    var found=events.find(function(e){return parseInt(e.id,10)===eid;});
+    if(!found){eid=parseInt(events[0].id,10);}
+    sel.value=String(eid);
+    localStorage.setItem('lt_event_id',String(eid));
+    return true;
+  });
+}
 
 function load(){
+  if(!eid){document.getElementById('info').textContent='Selectionnez un evenement';return;}
   Promise.all([
     fetch(A+'?action=event&event_id='+eid).then(function(r){return r.json();}),
     fetch(A+'?action=guests&event_id='+eid).then(function(r){return r.json();})
@@ -84,6 +103,7 @@ function load(){
       var logoHtml=logo?'<img class="logo" src="'+esc(logo)+'" alt="">':'';
       var descHtml=desc?'<div class="ed">'+esc(desc)+'</div>':'';
       var qrId='qr'+idx;
+      var code = String(g.ticket_code||'');
       d.innerHTML=
         '<div class="tk-band">'+logoHtml+'<div class="en">'+esc(name)+'</div>'
         +(sub?'<div class="es">'+esc(sub)+'</div>':'')
@@ -92,21 +112,26 @@ function load(){
         +'<div class="tk-stars">★ ★ ★ ★ ★</div>'
         +'<div class="tk-body">'
         +'<div class="tk-info"><div class="tk-name">'+esc(g.prenom)+' '+esc(g.nom)+'</div><div class="tk-sub">Ticket '+esc(g.ticket_label)+'</div></div>'
-        +'<div class="tk-qr"><div id="'+qrId+'"></div><div class="tk-code">'+g.ticket_code+'</div></div>'
+        +'<div class="tk-qr"><div id="'+qrId+'"></div><div class="tk-code">'+esc(code)+'</div></div>'
         +'</div>'
         +'<div class="tk-foot">★ 1 ticket = 1 entree ★</div>';
       w.appendChild(d);
 
       new QRCode(document.getElementById(qrId),{
-        text:g.ticket_code, width:80, height:80,
+        text:code, width:80, height:80,
         colorDark:'#1a1a2e', colorLight:'#FFF8E7',
         correctLevel:QRCode.CorrectLevel.M
       });
     });
   });
 }
+function onEventChange(){
+  eid=parseInt(document.getElementById('ev-sel').value,10)||0;
+  localStorage.setItem('lt_event_id',String(eid));
+  load();
+}
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-load();
+loadEvents().then(function(ok){if(ok)load();});
 </script>
 </body>
 </html>
