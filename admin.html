@@ -83,7 +83,7 @@ textarea{height:130px;font-family:monospace;font-size:.82rem}
       </div>
       <label>Lieu</label><input type="text" id="ce-loc" placeholder="Salle des Fetes">
       <label>Description</label><textarea id="ce-desc" style="height:60px" placeholder="Stage de Lindy Hop pour tous niveaux..."></textarea>
-      <label style="display:flex;align-items:center;gap:8px;color:var(--txt);margin-top:10px"><input type="checkbox" id="ce-non-qr" style="width:auto">&nbsp;</label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--txt);margin-top:10px"><input type="checkbox" id="ce-non-qr" style="width:auto">Evenement sans QR code</label>
       <button class="btn bs btn-s" onclick="createEv()">Creer</button>
       <button class="btn bo btn-s" onclick="hideCreate()">Annuler</button>
     </div>
@@ -97,7 +97,7 @@ textarea{height:130px;font-family:monospace;font-size:.82rem}
       <label>Description</label><textarea id="ee-desc" style="height:60px"></textarea>
       <label>Logo (URL de l'image)</label>
       <input type="text" id="ee-logo-url" placeholder="https://example.com/logo.png">
-      <label style="display:flex;align-items:center;gap:8px;color:var(--txt);margin-top:10px"><input type="checkbox" id="ee-non-qr" style="width:auto">&nbsp;</label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--txt);margin-top:10px"><input type="checkbox" id="ee-non-qr" style="width:auto">Evenement sans QR code</label>
       <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
         <span style="font-size:.78rem;color:var(--mut)">ou uploader :</span>
         <input type="file" id="ee-logo-file" accept="image/*" style="flex:1;font-size:.8rem">
