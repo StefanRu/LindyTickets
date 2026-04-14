@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `events` (
     `location` VARCHAR(255) DEFAULT '',
     `description` TEXT DEFAULT NULL,
     `logo_url` VARCHAR(500) DEFAULT '',
+    `non_qrcode_event` TINYINT(1) NOT NULL DEFAULT 0,
     `archived` TINYINT(1) NOT NULL DEFAULT 0,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

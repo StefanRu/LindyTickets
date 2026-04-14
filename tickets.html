@@ -104,6 +104,7 @@ function load(){
       var descHtml=desc?'<div class="ed">'+esc(desc)+'</div>':'';
       var qrId='qr'+idx;
       var code = String(g.ticket_code||'');
+      var isNonQr=(parseInt(ev.non_qrcode_event,10)||0)===1;
       d.innerHTML=
         '<div class="tk-band">'+logoHtml+'<div class="en">'+esc(name)+'</div>'
         +(sub?'<div class="es">'+esc(sub)+'</div>':'')
@@ -112,16 +113,18 @@ function load(){
         +'<div class="tk-stars">★ ★ ★ ★ ★</div>'
         +'<div class="tk-body">'
         +'<div class="tk-info"><div class="tk-name">'+esc(g.prenom)+' '+esc(g.nom)+'</div><div class="tk-sub">Ticket '+esc(g.ticket_label)+'</div></div>'
-        +'<div class="tk-qr"><div id="'+qrId+'"></div><div class="tk-code">'+esc(code)+'</div></div>'
+        +'<div class="tk-qr">' + (isNonQr ? '<div style="font-size:.72rem;color:#8B0000;font-family:system-ui">Sans QR code</div>' : '<div id="'+qrId+'"></div><div class="tk-code">'+esc(code)+'</div>') + '</div>'
         +'</div>'
         +'<div class="tk-foot">★ 1 ticket = 1 entree ★</div>';
       w.appendChild(d);
 
-      new QRCode(document.getElementById(qrId),{
-        text:code, width:80, height:80,
-        colorDark:'#1a1a2e', colorLight:'#FFF8E7',
-        correctLevel:QRCode.CorrectLevel.M
-      });
+      if(!isNonQr){
+        new QRCode(document.getElementById(qrId),{
+          text:code, width:80, height:80,
+          colorDark:'#1a1a2e', colorLight:'#FFF8E7',
+          correctLevel:QRCode.CorrectLevel.M
+        });
+      }
     });
   });
 }

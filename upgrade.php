@@ -11,6 +11,10 @@ try {
     $db->exec("ALTER TABLE events ADD COLUMN logo_url VARCHAR(500) DEFAULT '' AFTER description");
     $msgs[] = "Colonne logo_url ajoutee";
 } catch (PDOException $e) { $msgs[] = "logo_url: " . $e->getMessage(); }
+try {
+    $db->exec("ALTER TABLE events ADD COLUMN non_qrcode_event TINYINT(1) NOT NULL DEFAULT 0 AFTER logo_url");
+    $msgs[] = "Colonne non_qrcode_event ajoutee";
+} catch (PDOException $e) { $msgs[] = "non_qrcode_event: " . $e->getMessage(); }
 ?>
 <!DOCTYPE html><html><head><meta charset="UTF-8"><title>Upgrade</title></head><body style="font-family:sans-serif;max-width:500px;margin:40px auto;padding:20px">
 <h1>Upgrade v3.1</h1>
