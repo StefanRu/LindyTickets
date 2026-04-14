@@ -156,7 +156,7 @@ body {
         </div>
         <div class="qr-box">
 <?php if ($nonQr): ?>
-            <div style="font-size:12px;color:#8B0000;font-family:system-ui">Sans QR code</div>
+            
 <?php else: ?>
             <div id="qr"></div>
             <div class="qr-code"><?= $code ?></div>
