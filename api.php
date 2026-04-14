@@ -124,8 +124,9 @@ function route(PDO $db, string $action): void {
         $b = getBody();
         $name = trim($b['name'] ?? '');
         if ($name === '') sendJson(['error' => 'Nom requis'], 400);
-        $st = $db->prepare("INSERT INTO events (name, event_date, location, description, logo_url) VALUES (?, ?, ?, ?, ?)");
-        $st->execute([$name, trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), trim($b['description'] ?? ''), trim($b['logo_url'] ?? '')]);
+        $nonQr = !empty($b['non_qrcode_event']) ? 1 : 0;
+        $st = $db->prepare("INSERT INTO events (name, event_date, location, description, logo_url, non_qrcode_event) VALUES (?, ?, ?, ?, ?, ?)");
+        $st->execute([$name, trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), trim($b['description'] ?? ''), trim($b['logo_url'] ?? ''), $nonQr]);
         $id = (int)$db->lastInsertId();
         wlog('INFO', "Event created #$id: $name");
         sendJson(['status' => 'ok', 'event_id' => $id]);
@@ -135,8 +136,9 @@ function route(PDO $db, string $action): void {
         $b = getBody();
         $eid = (int)($b['event_id'] ?? 0);
         if (!$eid) sendJson(['error' => 'event_id requis'], 400);
-        $st = $db->prepare("UPDATE events SET name=?, event_date=?, location=?, description=?, logo_url=? WHERE id=?");
-        $st->execute([trim($b['name'] ?? ''), trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), trim($b['description'] ?? ''), trim($b['logo_url'] ?? ''), $eid]);
+        $nonQr = !empty($b['non_qrcode_event']) ? 1 : 0;
+        $st = $db->prepare("UPDATE events SET name=?, event_date=?, location=?, description=?, logo_url=?, non_qrcode_event=? WHERE id=?");
+        $st->execute([trim($b['name'] ?? ''), trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), trim($b['description'] ?? ''), trim($b['logo_url'] ?? ''), $nonQr, $eid]);
         wlog('INFO', "Event updated #$eid");
         sendJson(['status' => 'ok']);
 
