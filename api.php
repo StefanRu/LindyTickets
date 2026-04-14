@@ -124,8 +124,9 @@ function route(PDO $db, string $action): void {
         $b = getBody();
         $name = trim($b['name'] ?? '');
         if ($name === '') sendJson(['error' => 'Nom requis'], 400);
-        $st = $db->prepare("INSERT INTO events (name, event_date, location, description, logo_url) VALUES (?, ?, ?, ?, ?)");
-        $st->execute([$name, trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), trim($b['description'] ?? ''), trim($b['logo_url'] ?? '')]);
+        $nonQr = !empty($b['non_qrcode_event']) ? 1 : 0;
+        $st = $db->prepare("INSERT INTO events (name, event_date, location, description, logo_url, non_qrcode_event) VALUES (?, ?, ?, ?, ?, ?)");
+        $st->execute([$name, trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), trim($b['description'] ?? ''), trim($b['logo_url'] ?? ''), $nonQr]);
         $id = (int)$db->lastInsertId();
         wlog('INFO', "Event created #$id: $name");
         sendJson(['status' => 'ok', 'event_id' => $id]);
@@ -135,8 +136,9 @@ function route(PDO $db, string $action): void {
         $b = getBody();
         $eid = (int)($b['event_id'] ?? 0);
         if (!$eid) sendJson(['error' => 'event_id requis'], 400);
-        $st = $db->prepare("UPDATE events SET name=?, event_date=?, location=?, description=?, logo_url=? WHERE id=?");
-        $st->execute([trim($b['name'] ?? ''), trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), trim($b['description'] ?? ''), trim($b['logo_url'] ?? ''), $eid]);
+        $nonQr = !empty($b['non_qrcode_event']) ? 1 : 0;
+        $st = $db->prepare("UPDATE events SET name=?, event_date=?, location=?, description=?, logo_url=?, non_qrcode_event=? WHERE id=?");
+        $st->execute([trim($b['name'] ?? ''), trim($b['event_date'] ?? ''), trim($b['location'] ?? ''), trim($b['description'] ?? ''), trim($b['logo_url'] ?? ''), $nonQr, $eid]);
         wlog('INFO', "Event updated #$eid");
         sendJson(['status' => 'ok']);
 
@@ -347,7 +349,7 @@ function route(PDO $db, string $action): void {
     case 'ticket_pdf':
         $code = strtoupper(trim($_GET['code'] ?? ''));
         if (!$code) { http_response_code(400); echo 'Code manquant'; exit; }
-        $st = $db->prepare("SELECT t.*,e.name AS event_name,e.event_date,e.location,e.description,e.logo_url FROM tickets t JOIN events e ON t.event_id=e.id WHERE t.ticket_code=?");
+        $st = $db->prepare("SELECT t.*,e.name AS event_name,e.event_date,e.location,e.description,e.logo_url,e.non_qrcode_event FROM tickets t JOIN events e ON t.event_id=e.id WHERE t.ticket_code=?");
         $st->execute([$code]);
         $tk = $st->fetch();
         if (!$tk) { http_response_code(404); echo 'Ticket introuvable'; exit; }
