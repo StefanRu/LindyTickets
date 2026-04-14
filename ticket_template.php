@@ -9,6 +9,7 @@ $logo  = $tk['logo_url'] ?? '';
 $name  = $h($tk['prenom'] . ' ' . $tk['nom']);
 $label = $h($tk['ticket_label']);
 $code  = $h($tk['ticket_code']);
+$nonQr = !empty($tk['non_qrcode_event']);
 $url   = SITE_URL;
 ?>
 <!DOCTYPE html>
@@ -17,7 +18,9 @@ $url   = SITE_URL;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Ticket — <?= $name ?></title>
+<?php if (!$nonQr): ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<?php endif; ?>
 <style>
 @page { size: 160mm 110mm; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -152,12 +155,17 @@ body {
             <div class="tnum">Ticket <?= $label ?></div>
         </div>
         <div class="qr-box">
+<?php if ($nonQr): ?>
+            
+<?php else: ?>
             <div id="qr"></div>
             <div class="qr-code"><?= $code ?></div>
+<?php endif; ?>
         </div>
     </div>
     <div class="footer">★ Pr&eacute;sentez ce ticket &agrave; l'entr&eacute;e &mdash; 1 ticket = 1 entr&eacute;e ★</div>
 </div>
+<?php if (!$nonQr): ?>
 <script>
 new QRCode(document.getElementById('qr'), {
     text: "<?= $code ?>",
@@ -166,5 +174,6 @@ new QRCode(document.getElementById('qr'), {
     correctLevel: QRCode.CorrectLevel.M
 });
 </script>
+<?php endif; ?>
 </body>
 </html>
