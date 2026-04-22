@@ -4,67 +4,62 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tous les Tickets</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Georgia,'Times New Roman',serif;background:#f5f0e6}
-.bar{background:#1a1a1a;color:#fff;padding:14px 20px;text-align:center;position:sticky;top:0;z-index:10;font-family:system-ui,sans-serif}
-.bar h1{font-size:1rem;margin-bottom:6px}
-.bar button{background:#c0392b;color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:.88rem;cursor:pointer;margin:3px}
-.bar a{color:#fff;opacity:.7;font-size:.82rem;text-decoration:none;display:block;margin-top:6px}
-#info{font-size:.82rem;margin-top:4px;opacity:.8;font-family:system-ui}
-.wrap{padding:16px;display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
-
-/* Ticket card - retro */
-.tk{
-    width:430px;background:#FFF8E7;border-radius:4px;
-    box-shadow:0 2px 10px rgba(0,0,0,.1);overflow:hidden;
-    position:relative;border:2px solid #D4A017;
-    page-break-inside:avoid;
-}
-.tk::before,.tk::after{content:'★';position:absolute;color:#D4A017;font-size:10px;z-index:2}
-.tk::before{top:6px;left:8px}.tk::after{top:6px;right:8px}
-
-.tk-band{background:#1a1a2e;padding:12px 14px;text-align:center;color:#fff}
-.tk-band .logo{max-height:30px;max-width:120px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto}
-.tk-band .en{font-size:15px;font-weight:700;letter-spacing:.5px}
-.tk-band .es{font-size:9px;opacity:.7;margin-top:2px;font-family:system-ui}
-.tk-band .ed{font-size:8px;opacity:.6;margin-top:3px;font-style:italic;font-family:system-ui;line-height:1.3}
-.tk-acc{height:3px;background:linear-gradient(90deg,#8B0000,#D4A017 30%,#D4A017 70%,#8B0000)}
-.tk-stars{text-align:center;color:#D4A017;font-size:8px;letter-spacing:6px;padding:4px 0 0}
-
-.tk-body{display:flex;padding:10px 14px 8px;align-items:center;gap:12px}
-.tk-info{flex:1}
-.tk-name{font-size:15px;font-weight:700;color:#1a1a2e}
-.tk-sub{font-size:10px;color:#8B0000;margin-top:2px;font-weight:600}
-
-.tk-qr{text-align:center;flex-shrink:0;width:90px}
-.tk-qr canvas{display:block;margin:0 auto}
-/* Do NOT hide img globally - JS will clean duplicates */
-.tk-code{font-family:monospace;font-size:7px;color:#bbb;margin-top:2px;text-align:center}
-
-.tk-foot{text-align:center;font-size:7px;color:#ccc;padding:5px;border-top:1px dashed #D4A017;font-family:system-ui}
-
-@media print{
-    .bar{display:none!important}
-    body{background:#fff}
-    .wrap{padding:0;gap:8px}
-    .tk{box-shadow:none;break-inside:avoid}
-}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f5f0e6;color:#111}
+.bar{background:#1a1a1a;color:#fff;padding:14px 20px;text-align:center;position:sticky;top:0;z-index:10}
+.bar h1{font-size:1rem;margin-bottom:8px}
+.bar .row{display:flex;justify-content:center;gap:8px;align-items:center;flex-wrap:wrap}
+.bar button{background:#c0392b;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:.88rem;cursor:pointer}
+.bar button.alt{background:#444}
+.bar a{color:#fff;opacity:.8;font-size:.82rem;text-decoration:none;display:block;margin-top:8px}
+#info{font-size:.82rem;margin-top:6px;opacity:.85}
+.wrap{padding:16px;max-width:1100px;margin:0 auto}
+.card{background:#fff;border:1px solid #ddd;border-radius:10px;overflow:hidden}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:.92rem}
+.table th{background:#fafafa;font-size:.83rem;text-transform:uppercase;letter-spacing:.03em;color:#555}
+.table tr:hover td{background:#fcfcfc}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.btn-link{background:#1a1a2e;color:#fff;text-decoration:none;padding:6px 10px;border-radius:6px;font-size:.8rem}
+.small{font-size:.8rem;color:#666}
 </style>
 </head>
 <body>
 <div class="bar">
   <h1>Tous les Tickets</h1>
-  <button onclick="window.print()">Imprimer / PDF</button>
-  <button onclick="load()">Recharger</button>
-  <select id="ev-sel" onchange="onEventChange()" style="margin-left:8px;padding:6px 8px;border-radius:6px;border:none;max-width:280px"></select>
+  <div class="row">
+    <select id="ev-sel" onchange="onEventChange()" style="padding:7px 9px;border-radius:6px;border:none;max-width:320px"></select>
+    <button onclick="openSelectedPdf()">PDF sélection</button>
+    <button class="alt" onclick="openAllPdf()">PDF tous</button>
+    <button class="alt" onclick="toggleAll(true)">Tout cocher</button>
+    <button class="alt" onclick="toggleAll(false)">Tout décocher</button>
+    <button class="alt" onclick="load()">Recharger</button>
+  </div>
   <div id="info">Chargement...</div>
   <a href="admin.html">Admin</a>
 </div>
-<div class="wrap" id="wrap"><div style="padding:40px;color:#888;font-family:system-ui">Chargement...</div></div>
+<div class="wrap">
+  <div class="card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="master" onchange="onMasterChange(this.checked)"></th>
+          <th>Nom</th>
+          <th>Ticket</th>
+          <th>Code</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="5" class="small" style="padding:20px">Chargement...</td></tr></tbody>
+    </table>
+  </div>
+</div>
 <script>
 var A='api.php',eid=parseInt(new URLSearchParams(location.search).get('event_id')||localStorage.getItem('lt_event_id')||'0',10)||0;
+var current=[];
+
+function esc(s){var d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML;}
 
 function loadEvents(){
   return fetch(A+'?action=events').then(function(r){return r.json();}).then(function(events){
@@ -76,7 +71,7 @@ function loadEvents(){
     }
     sel.innerHTML=events.map(function(e){return '<option value="'+e.id+'">'+esc(e.name)+'</option>';}).join('');
     var found=events.find(function(e){return parseInt(e.id,10)===eid;});
-    if(!found){eid=parseInt(events[0].id,10);}
+    if(!found){eid=parseInt(events[0].id,10);}    
     sel.value=String(eid);
     localStorage.setItem('lt_event_id',String(eid));
     return true;
@@ -89,51 +84,61 @@ function load(){
     fetch(A+'?action=event&event_id='+eid).then(function(r){return r.json();}),
     fetch(A+'?action=guests&event_id='+eid).then(function(r){return r.json();})
   ]).then(function(res){
-    var ev=res[0],gs=res[1],w=document.getElementById('wrap');
-    w.innerHTML='';
-    if(!gs.length){w.innerHTML='<div style="padding:40px;color:#888;font-family:system-ui">Aucun ticket.</div>';document.getElementById('info').textContent='0';return;}
-    document.getElementById('info').textContent=gs.length+' tickets — '+esc(ev.name||'');
-    var name=ev.name||'Evenement';
-    var sub=[ev.event_date,ev.location].filter(Boolean).join('  —  ');
-    var desc=ev.description||'';
-    var logo=ev.logo_url||'';
+    var ev=res[0],gs=res[1],rows=document.getElementById('rows');
+    current=gs||[];
+    document.getElementById('master').checked=false;
 
-    gs.forEach(function(g,idx){
-      var d=document.createElement('div');d.className='tk';
-      var logoHtml=logo?'<img class="logo" src="'+esc(logo)+'" alt="">':'';
-      var descHtml=desc?'<div class="ed">'+esc(desc)+'</div>':'';
-      var qrId='qr'+idx;
-      var code = String(g.ticket_code||'');
-      var isNonQr=(parseInt(ev.non_qrcode_event,10)||0)===1;
-      d.innerHTML=
-        '<div class="tk-band">'+logoHtml+'<div class="en">'+esc(name)+'</div>'
-        +(sub?'<div class="es">'+esc(sub)+'</div>':'')
-        +descHtml+'</div>'
-        +'<div class="tk-acc"></div>'
-        +'<div class="tk-stars">★ ★ ★ ★ ★</div>'
-        +'<div class="tk-body">'
-        +'<div class="tk-info"><div class="tk-name">'+esc(g.prenom)+' '+esc(g.nom)+'</div><div class="tk-sub">Ticket '+esc(g.ticket_label)+'</div></div>'
-        +'<div class="tk-qr">' + (isNonQr ? '' : '<div id="'+qrId+'"></div><div class="tk-code">'+esc(code)+'</div>') + '</div>'
-        +'</div>'
-        +'<div class="tk-foot">★ 1 ticket = 1 entree ★</div>';
-      w.appendChild(d);
+    if(!current.length){
+      rows.innerHTML='<tr><td colspan="5" class="small" style="padding:20px">Aucun ticket.</td></tr>';
+      document.getElementById('info').textContent='0 ticket — '+esc(ev.name||'');
+      return;
+    }
 
-      if(!isNonQr){
-        new QRCode(document.getElementById(qrId),{
-          text:code, width:80, height:80,
-          colorDark:'#1a1a2e', colorLight:'#FFF8E7',
-          correctLevel:QRCode.CorrectLevel.M
-        });
-      }
-    });
+    document.getElementById('info').textContent=current.length+' tickets — '+esc(ev.name||'');
+    rows.innerHTML=current.map(function(g,idx){
+      var code=encodeURIComponent(g.ticket_code||'');
+      return '<tr>'
+        +'<td><input type="checkbox" class="ck" data-code="'+esc(g.ticket_code)+'"></td>'
+        +'<td>'+esc(g.prenom)+' '+esc(g.nom)+'</td>'
+        +'<td>'+esc(g.ticket_label)+'</td>'
+        +'<td><code>'+esc(g.ticket_code)+'</code></td>'
+        +'<td class="actions">'
+        +'<a class="btn-link" target="_blank" rel="noopener" href="api.php?action=ticket_pdf&code='+code+'">PDF</a>'
+        +'</td></tr>';
+    }).join('');
   });
 }
+
+function selectedCodes(){
+  return Array.from(document.querySelectorAll('.ck:checked')).map(function(c){return c.getAttribute('data-code');});
+}
+
+function openSelectedPdf(){
+  var codes=selectedCodes();
+  if(!codes.length){alert('Selectionnez au moins un ticket.');return;}
+  var q='api.php?action=ticket_pdf&codes='+encodeURIComponent(codes.join(','));
+  window.open(q,'_blank','noopener');
+}
+
+function openAllPdf(){
+  if(!current.length){alert('Aucun ticket.');return;}
+  var codes=current.map(function(g){return g.ticket_code;});
+  var q='api.php?action=ticket_pdf&codes='+encodeURIComponent(codes.join(','));
+  window.open(q,'_blank','noopener');
+}
+
+function toggleAll(v){
+  document.querySelectorAll('.ck').forEach(function(c){c.checked=v;});
+  document.getElementById('master').checked=v;
+}
+function onMasterChange(v){toggleAll(v);}
+
 function onEventChange(){
   eid=parseInt(document.getElementById('ev-sel').value,10)||0;
   localStorage.setItem('lt_event_id',String(eid));
   load();
 }
-function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
 loadEvents().then(function(ok){if(ok)load();});
 </script>
 </body>
