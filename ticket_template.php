@@ -1,37 +1,26 @@
 <?php
-/** @var array $tk — ticket + event data */
+/** @var array $tickets */
 $h = fn($s) => htmlspecialchars((string)($s ?? ''), ENT_QUOTES, 'UTF-8');
-$evN   = $h($tk['event_name']);
-$evSub = implode('  —  ', array_filter([$tk['event_date'] ?? '', $tk['location'] ?? '']));
-$evSub = $h($evSub);
-$desc  = $h($tk['description'] ?? '');
-$logo  = $tk['logo_url'] ?? '';
-$name  = $h($tk['prenom'] . ' ' . $tk['nom']);
-$label = $h($tk['ticket_label']);
-$code  = $h($tk['ticket_code']);
-$nonQr = !empty($tk['non_qrcode_event']);
-$url   = SITE_URL;
+$tickets = isset($tickets) && is_array($tickets) ? array_values($tickets) : (isset($tk) ? [$tk] : []);
+$url = SITE_URL;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Ticket — <?= $name ?></title>
-<?php if (!$nonQr): ?>
+<title>Tickets PDF</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<?php endif; ?>
 <style>
-@page { size: 160mm 110mm; margin: 0; }
+@page { size: A4 portrait; margin: 10mm; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
     font-family: Georgia, 'Times New Roman', serif;
     background: #f5f0e6;
-    display: flex; justify-content: center; align-items: center;
-    min-height: 100vh;
+    color: #111;
 }
 .toolbar {
-    position: fixed; top: 0; left: 0; right: 0;
+    position: sticky; top: 0; left: 0; right: 0;
     background: #1a1a1a; color: #fff; padding: 10px 20px;
     text-align: center; z-index: 10; font-family: system-ui, sans-serif;
 }
@@ -44,136 +33,152 @@ body {
     text-decoration: none; margin-left: 12px; font-family: system-ui;
 }
 
-.ticket {
-    width: 460px; background: #FFF8E7;
-    border-radius: 4px; overflow: hidden; margin-top: 56px;
-    box-shadow: 0 4px 20px rgba(0,0,0,.15);
-    border: 2px solid #D4A017;
-    position: relative;
+.sheet {
+    width: 190mm;
+    min-height: 277mm;
+    margin: 10mm auto;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 4mm;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 62mm;
+    gap: 4mm;
 }
 
-/* Corner stars */
-.ticket::before, .ticket::after {
-    content: '★'; position: absolute; color: #D4A017; font-size: 14px; z-index: 2;
+.ticket {
+    background: #FFF8E7;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1mm solid #111;
+    position: relative;
+    break-inside: avoid;
 }
-.ticket::before { top: 8px; left: 10px; }
-.ticket::after { top: 8px; right: 10px; }
+
+.ticket::before, .ticket::after {
+    content: '★'; position: absolute; color: #D4A017; font-size: 10px; z-index: 2;
+}
+.ticket::before { top: 5px; left: 7px; }
+.ticket::after { top: 5px; right: 7px; }
 
 .band {
     background: #1a1a2e;
-    padding: 20px 24px; color: #fff; text-align: center;
-    position: relative;
+    padding: 5mm 4mm 3mm;
+    color: #fff;
+    text-align: center;
 }
-.band .logo-row {
-    margin-bottom: 8px;
-}
-.band .logo-row img {
-    max-height: 50px; max-width: 200px; object-fit: contain;
-}
-.band .ev-name {
-    font-size: 24px; font-weight: 700; letter-spacing: 1px;
-    text-shadow: 0 1px 3px rgba(0,0,0,.3);
-}
-.band .ev-sub {
-    font-size: 12px; opacity: .8; margin-top: 4px; font-family: system-ui, sans-serif;
-}
+.band .logo-row img { max-height: 10mm; max-width: 32mm; object-fit: contain; }
+.band .ev-name { font-size: 4.6mm; font-weight: 700; letter-spacing: .2mm; line-height: 1.1; }
+.band .ev-sub { font-size: 2.4mm; opacity: .85; margin-top: .8mm; font-family: system-ui, sans-serif; }
 .band .ev-desc {
-    font-size: 11px; opacity: .7; margin-top: 6px; font-style: italic;
-    font-family: system-ui, sans-serif; line-height: 1.4;
-    max-width: 380px; margin-left: auto; margin-right: auto;
+    font-size: 2.2mm; opacity: .78; margin-top: .8mm; font-style: italic;
+    font-family: system-ui, sans-serif; line-height: 1.25;
+    max-height: 6mm; overflow: hidden;
 }
 
-/* Gold accent strip with stars */
-.accent {
-    height: 5px;
-    background: linear-gradient(90deg, #8B0000, #D4A017 30%, #D4A017 70%, #8B0000);
-}
+.accent { height: 1.8mm; background: linear-gradient(90deg, #8B0000, #D4A017 30%, #D4A017 70%, #8B0000); }
+.stars-row { text-align: center; color: #D4A017; font-size: 2.2mm; letter-spacing: 1.4mm; padding-top: .7mm; }
 
-.stars-row {
-    text-align: center; color: #D4A017; font-size: 11px;
-    letter-spacing: 8px; padding: 6px 0 2px;
-}
-
-.body {
-    display: flex; padding: 16px 24px 12px; align-items: center; gap: 20px;
-}
-.info { flex: 1; }
+.body { display: flex; padding: 2.8mm 3.2mm 2.2mm; align-items: center; gap: 2.5mm; }
+.info { flex: 1; min-width: 0; }
 .info .lbl {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 2px;
-    color: #999; margin-bottom: 3px; font-family: system-ui;
+    font-size: 2.1mm; text-transform: uppercase; letter-spacing: .4mm;
+    color: #999; margin-bottom: .8mm; font-family: system-ui;
 }
 .info .guest-name {
-    font-size: 24px; font-weight: 700; color: #1a1a2e; line-height: 1.2;
+    font-size: 4.5mm; font-weight: 700; color: #1a1a2e; line-height: 1.08;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.info .tnum {
-    font-size: 13px; color: #8B0000; margin-top: 6px; font-weight: 600;
-}
+.info .tnum { font-size: 2.8mm; color: #8B0000; margin-top: 1.1mm; font-weight: 600; }
 
-.qr-box { text-align: center; flex-shrink: 0; }
+.qr-box { text-align: center; flex-shrink: 0; width: 22mm; }
 .qr-code {
-    font-family: 'Courier New', monospace; font-size: 8px;
-    color: #bbb; margin-top: 4px; letter-spacing: 1px;
+    font-family: 'Courier New', monospace; font-size: 1.85mm;
+    color: #777; margin-top: .7mm; letter-spacing: .1mm; line-height: 1.1;
 }
 
 .footer {
-    text-align: center; font-size: 9px; color: #bbb;
-    padding: 8px 16px; border-top: 1px dashed #D4A017;
-    font-family: system-ui; letter-spacing: .3px;
+    text-align: center; font-size: 2.05mm; color: #666;
+    padding: 1.6mm 2mm; border-top: .35mm dashed #D4A017;
+    font-family: system-ui; letter-spacing: .1mm;
 }
 
 @media print {
     .toolbar { display: none !important; }
-    body { background: #fff; align-items: flex-start; padding: 0; }
-    .ticket { box-shadow: none; margin: 0; }
+    body { background: #fff; }
+    .sheet { margin: 0 auto; border: none; page-break-after: always; }
+    .sheet:last-child { page-break-after: auto; }
 }
 </style>
 </head>
 <body>
 <div class="toolbar">
     <button onclick="window.print()">Imprimer / PDF</button>
-    <a href="<?= $url ?>">Retour au scanner</a>
+    <a href="<?= $h($url) ?>">Retour au scanner</a>
 </div>
-<div class="ticket">
-    <div class="band">
-<?php if ($logo): ?>
-        <div class="logo-row"><img src="<?= $h($logo) ?>" alt="Logo"></div>
-<?php endif; ?>
-        <div class="ev-name"><?= $evN ?></div>
-<?php if ($evSub): ?>
-        <div class="ev-sub"><?= $evSub ?></div>
-<?php endif; ?>
-<?php if ($desc): ?>
-        <div class="ev-desc"><?= $desc ?></div>
-<?php endif; ?>
-    </div>
-    <div class="accent"></div>
-    <div class="stars-row">★ ★ ★ ★ ★</div>
-    <div class="body">
-        <div class="info">
-            <div class="lbl">Invit&eacute;</div>
-            <div class="guest-name"><?= $name ?></div>
-            <div class="tnum">Ticket <?= $label ?></div>
+<?php
+$chunks = array_chunk($tickets, 8);
+foreach ($chunks as $page => $group):
+?>
+<div class="sheet">
+<?php foreach ($group as $i => $row):
+    $evN = $h($row['event_name'] ?? 'Évènement');
+    $evSub = implode('  —  ', array_filter([$row['event_date'] ?? '', $row['location'] ?? '']));
+    $evSub = $h($evSub);
+    $desc = $h($row['description'] ?? '');
+    $logo = $row['logo_url'] ?? '';
+    $name = $h(($row['prenom'] ?? '') . ' ' . ($row['nom'] ?? ''));
+    $label = $h($row['ticket_label'] ?? '');
+    $code = $h($row['ticket_code'] ?? '');
+    $nonQr = !empty($row['non_qrcode_event']);
+    $qrId = 'qr_' . $page . '_' . $i;
+?>
+    <article class="ticket">
+        <div class="band">
+            <?php if ($logo): ?><div class="logo-row"><img src="<?= $h($logo) ?>" alt="Logo"></div><?php endif; ?>
+            <div class="ev-name"><?= $evN ?></div>
+            <?php if ($evSub): ?><div class="ev-sub"><?= $evSub ?></div><?php endif; ?>
+            <?php if ($desc): ?><div class="ev-desc"><?= $desc ?></div><?php endif; ?>
         </div>
-        <div class="qr-box">
-<?php if ($nonQr): ?>
-            
-<?php else: ?>
-            <div id="qr"></div>
-            <div class="qr-code"><?= $code ?></div>
-<?php endif; ?>
+        <div class="accent"></div>
+        <div class="stars-row">★ ★ ★ ★ ★</div>
+        <div class="body">
+            <div class="info">
+                <div class="lbl">Invit&eacute;</div>
+                <div class="guest-name"><?= $name ?></div>
+                <div class="tnum">Ticket <?= $label ?></div>
+            </div>
+            <div class="qr-box">
+            <?php if (!$nonQr): ?>
+                <div id="<?= $qrId ?>"></div>
+                <div class="qr-code"><?= $code ?></div>
+            <?php endif; ?>
+            </div>
         </div>
-    </div>
-    <div class="footer">★ Pr&eacute;sentez ce ticket &agrave; l'entr&eacute;e &mdash; 1 ticket = 1 entr&eacute;e ★</div>
+        <div class="footer">★ Pr&eacute;sentez ce ticket &agrave; l'entr&eacute;e — 1 ticket = 1 entr&eacute;e ★</div>
+    </article>
+<?php endforeach; ?>
 </div>
-<?php if (!$nonQr): ?>
+<?php endforeach; ?>
+
 <script>
-new QRCode(document.getElementById('qr'), {
-    text: "<?= $code ?>",
-    width: 110, height: 110,
-    colorDark: "#1a1a2e", colorLight: "#FFF8E7",
-    correctLevel: QRCode.CorrectLevel.M
-});
+(function(){
+<?php foreach ($chunks as $page => $group):
+    foreach ($group as $i => $row):
+        if (!empty($row['non_qrcode_event'])) { continue; }
+        $qrId = 'qr_' . $page . '_' . $i;
+        $rawCode = json_encode((string)($row['ticket_code'] ?? ''));
+?>
+    new QRCode(document.getElementById('<?= $qrId ?>'), {
+        text: <?= $rawCode ?>,
+        width: 68,
+        height: 68,
+        colorDark: '#1a1a2e',
+        colorLight: '#FFF8E7',
+        correctLevel: QRCode.CorrectLevel.M
+    });
+<?php endforeach; endforeach; ?>
+})();
 </script>
-<?php endif; ?>
 </body>
 </html>

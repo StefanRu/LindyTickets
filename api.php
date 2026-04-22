@@ -347,12 +347,42 @@ function route(PDO $db, string $action): void {
     // ── TICKET PDF ──────────────────────────────────────────
 
     case 'ticket_pdf':
-        $code = strtoupper(trim($_GET['code'] ?? ''));
-        if (!$code) { http_response_code(400); echo 'Code manquant'; exit; }
-        $st = $db->prepare("SELECT t.*,e.name AS event_name,e.event_date,e.location,e.description,e.logo_url,e.non_qrcode_event FROM tickets t JOIN events e ON t.event_id=e.id WHERE t.ticket_code=?");
-        $st->execute([$code]);
-        $tk = $st->fetch();
-        if (!$tk) { http_response_code(404); echo 'Ticket introuvable'; exit; }
+        $codesRaw = trim((string)($_GET['codes'] ?? ''));
+        if ($codesRaw !== '') {
+            $codes = array_values(array_unique(array_filter(array_map(
+                fn($c) => strtoupper(trim((string)$c)),
+                explode(',', $codesRaw)
+            ))));
+        } else {
+            $single = strtoupper(trim((string)($_GET['code'] ?? '')));
+            $codes = $single !== '' ? [$single] : [];
+        }
+
+        if (!$codes) { http_response_code(400); echo 'Code manquant'; exit; }
+        $codes = array_slice($codes, 0, 100);
+
+        $ph = implode(',', array_fill(0, count($codes), '?'));
+        $sql = "SELECT t.*,e.name AS event_name,e.event_date,e.location,e.description,e.logo_url,e.non_qrcode_event
+                FROM tickets t
+                JOIN events e ON t.event_id=e.id
+                WHERE t.ticket_code IN ($ph)";
+        $st = $db->prepare($sql);
+        $st->execute($codes);
+        $rows = $st->fetchAll();
+        if (!$rows) { http_response_code(404); echo 'Ticket introuvable'; exit; }
+
+        $byCode = [];
+        foreach ($rows as $r) {
+            $byCode[strtoupper((string)$r['ticket_code'])] = $r;
+        }
+        $tickets = [];
+        foreach ($codes as $c) {
+            if (isset($byCode[$c])) {
+                $tickets[] = $byCode[$c];
+            }
+        }
+        if (!$tickets) { http_response_code(404); echo 'Ticket introuvable'; exit; }
+
         header('Content-Type: text/html; charset=utf-8');
         require __DIR__ . '/ticket_template.php';
         exit;
