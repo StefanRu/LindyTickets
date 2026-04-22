@@ -160,8 +160,14 @@ textarea{height:130px;font-family:monospace;font-size:.82rem}
   <div class="card">
     <h2>Liste des invites</h2>
     <input type="text" id="filter" placeholder="Filtrer..." oninput="filterGuests()" style="margin-bottom:8px">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px">
+      <button class="btn bo btn-s" onclick="selectFiltered(true)">Tout cocher (filtre)</button>
+      <button class="btn bo btn-s" onclick="selectFiltered(false)">Tout décocher (filtre)</button>
+      <button class="btn bp btn-s" onclick="openSelectedTicketsPdf()">Générer PDF sélection</button>
+      <span id="sel-count" class="help" style="display:inline-flex;align-items:center;margin-left:4px">0 sélectionné</span>
+    </div>
     <div style="overflow-x:auto">
-      <table class="gt"><thead><tr><th>Nom</th><th>Ticket</th><th>Code</th><th>Statut</th><th>Actions</th></tr></thead>
+      <table class="gt"><thead><tr><th><input type="checkbox" id="gt-master" onchange="toggleVisible(this.checked)"></th><th>Nom</th><th>Ticket</th><th>Code</th><th>Statut</th><th>Actions</th></tr></thead>
       <tbody id="gtb"></tbody></table>
     </div>
   </div>
@@ -184,6 +190,7 @@ textarea{height:130px;font-family:monospace;font-size:.82rem}
 <script>
 const A = 'api.php';
 let pw = '', evId = 0, guests = [];
+let selectedCodes = new Set();
 let lang = LTTranslations.normalizeLang(localStorage.getItem('lt_lang') || 'fr');
 function t(k){ return LTTranslations.t(lang, k); }
 function setLang(l){ lang = LTTranslations.normalizeLang(l); localStorage.setItem('lt_lang',lang); applyI18n(); refresh(); }
@@ -316,16 +323,27 @@ function refreshStats() {
 // ── Guest list ──
 function loadGuests() {
   if(!evId) return;
-  api('guests','&event_id='+evId).then(d => { guests=d; renderGuests(d); });
+  api('guests','&event_id='+evId).then(d => {
+    guests=d;
+    selectedCodes = new Set();
+    renderGuests(getFilteredGuests());
+    updateSelectionInfo();
+  });
+}
+function getFilteredGuests() {
+  const q = document.getElementById('filter').value.toLowerCase();
+  return q ? guests.filter(g=>(g.prenom+' '+g.nom+' '+g.ticket_code).toLowerCase().includes(q)) : guests;
 }
 function renderGuests(list) {
-  document.getElementById('gtb').innerHTML = list.map(g => {
+  const html = list.map(g => {
     const ci = g.checked_in==1;
     const tm = g.checked_in_at ? new Date(g.checked_in_at).toLocaleTimeString('fr-FR') : '';
     const code = String(g.ticket_code||'');
     const codeJs = code.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const codeUrl = encodeURIComponent(code);
-    return '<tr><td><b>'+esc(g.prenom)+' '+esc(g.nom)+'</b></td><td>'+esc(g.ticket_label)+'</td>'
+    const checked = selectedCodes.has(code) ? ' checked' : '';
+    return '<tr><td><input type="checkbox" class="gt-sel" data-code="'+esc(code)+'"'+checked+' onchange="onRowSelection(this)"></td>'
+      +'<td><b>'+esc(g.prenom)+' '+esc(g.nom)+'</b></td><td>'+esc(g.ticket_label)+'</td>'
       +'<td style="font-family:monospace;font-size:.78rem">'+esc(code)+'</td>'
       +'<td>'+(ci?'<span class="badge badge-ok">'+tm+'</span>':'<span class="badge badge-w">Attente</span>')+'</td>'
       +'<td class="acts">'
@@ -333,11 +351,54 @@ function renderGuests(list) {
       +'<button class="btn btn-s bp" onclick="window.open(\'api.php?action=ticket_pdf&code='+codeUrl+'\',\'_blank\',\'noopener\')">Ticket</button>'
       +'<button class="btn btn-s bd" onclick="delTicket(\''+codeJs+'\')">X</button>'
       +'</td></tr>';
-  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--mut);padding:20px">Aucun ticket</td></tr>';
+  }).join('');
+  document.getElementById('gtb').innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:var(--mut);padding:20px">Aucun ticket</td></tr>';
+  syncMasterCheckbox();
 }
-function filterGuests() {
-  const q = document.getElementById('filter').value.toLowerCase();
-  renderGuests(q ? guests.filter(g=>(g.prenom+' '+g.nom+' '+g.ticket_code).toLowerCase().includes(q)) : guests);
+function filterGuests() { renderGuests(getFilteredGuests()); }
+
+function onRowSelection(el){
+  const code = el.getAttribute('data-code') || '';
+  if(!code) return;
+  if(el.checked){ selectedCodes.add(code); } else { selectedCodes.delete(code); }
+  updateSelectionInfo();
+  syncMasterCheckbox();
+}
+function selectFiltered(v){
+  getFilteredGuests().forEach(function(g){
+    const c = String(g.ticket_code||'');
+    if(!c) return;
+    if(v){ selectedCodes.add(c); } else { selectedCodes.delete(c); }
+  });
+  renderGuests(getFilteredGuests());
+  updateSelectionInfo();
+}
+function toggleVisible(v){
+  document.querySelectorAll('.gt-sel').forEach(function(el){
+    const code = el.getAttribute('data-code') || '';
+    el.checked = v;
+    if(code){ if(v){ selectedCodes.add(code); } else { selectedCodes.delete(code); } }
+  });
+  updateSelectionInfo();
+  syncMasterCheckbox();
+}
+function syncMasterCheckbox(){
+  const rows = Array.from(document.querySelectorAll('.gt-sel'));
+  const master = document.getElementById('gt-master');
+  if(!master) return;
+  if(!rows.length){ master.checked=false; master.indeterminate=false; return; }
+  const checked = rows.filter(function(el){ return el.checked; }).length;
+  master.checked = checked===rows.length;
+  master.indeterminate = checked>0 && checked<rows.length;
+}
+function updateSelectionInfo(){
+  const el = document.getElementById('sel-count');
+  if(el) el.textContent = selectedCodes.size + ' sélectionné(s)';
+}
+function openSelectedTicketsPdf(){
+  if(!selectedCodes.size){ alert('Sélectionnez au moins un ticket.'); return; }
+  const codes = Array.from(selectedCodes);
+  window.open('api.php?action=ticket_pdf&codes='+encodeURIComponent(codes.join(',')),'_blank','noopener');
 }
 
 // ── Actions ──
