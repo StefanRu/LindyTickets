@@ -10,7 +10,8 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#
 .bar{background:#1a1a1a;color:#fff;padding:14px 20px;text-align:center;position:sticky;top:0;z-index:10}
 .bar h1{font-size:1rem;margin-bottom:8px}
 .bar .row{display:flex;justify-content:center;gap:8px;align-items:center;flex-wrap:wrap}
-.bar button{background:#444;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:.88rem;cursor:pointer}
+.bar button{background:#c0392b;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:.88rem;cursor:pointer}
+.bar button.alt{background:#444}
 .bar a{color:#fff;opacity:.8;font-size:.82rem;text-decoration:none;display:block;margin-top:8px}
 #info{font-size:.82rem;margin-top:6px;opacity:.85}
 .wrap{padding:16px;max-width:1100px;margin:0 auto}
@@ -18,6 +19,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#
 .table{width:100%;border-collapse:collapse}
 .table th,.table td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:.92rem}
 .table th{background:#fafafa;font-size:.83rem;text-transform:uppercase;letter-spacing:.03em;color:#555}
+.table tr:hover td{background:#fcfcfc}
 .actions{display:flex;gap:6px;flex-wrap:wrap}
 .btn-link{background:#1a1a2e;color:#fff;text-decoration:none;padding:6px 10px;border-radius:6px;font-size:.8rem}
 .small{font-size:.8rem;color:#666}
@@ -28,7 +30,11 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#
   <h1>Tous les Tickets</h1>
   <div class="row">
     <select id="ev-sel" onchange="onEventChange()" style="padding:7px 9px;border-radius:6px;border:none;max-width:320px"></select>
-    <button onclick="load()">Recharger</button>
+    <button onclick="openSelectedPdf()">PDF sélection</button>
+    <button class="alt" onclick="openAllPdf()">PDF tous</button>
+    <button class="alt" onclick="toggleAll(true)">Tout cocher</button>
+    <button class="alt" onclick="toggleAll(false)">Tout décocher</button>
+    <button class="alt" onclick="load()">Recharger</button>
   </div>
   <div id="info">Chargement...</div>
   <a href="admin.html">Admin</a>
@@ -36,14 +42,25 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#
 <div class="wrap">
   <div class="card">
     <table class="table">
-      <thead><tr><th>Nom</th><th>Ticket</th><th>Code</th><th>Actions</th></tr></thead>
-      <tbody id="rows"><tr><td colspan="4" class="small" style="padding:20px">Chargement...</td></tr></tbody>
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="master" onchange="onMasterChange(this.checked)"></th>
+          <th>Nom</th>
+          <th>Ticket</th>
+          <th>Code</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="5" class="small" style="padding:20px">Chargement...</td></tr></tbody>
     </table>
   </div>
 </div>
 <script>
 var A='api.php',eid=parseInt(new URLSearchParams(location.search).get('event_id')||localStorage.getItem('lt_event_id')||'0',10)||0;
+var current=[];
+
 function esc(s){var d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML;}
+
 function loadEvents(){
   return fetch(A+'?action=events').then(function(r){return r.json();}).then(function(events){
     var sel=document.getElementById('ev-sel');
@@ -67,23 +84,60 @@ function load(){
     fetch(A+'?action=guests&event_id='+eid).then(function(r){return r.json();})
   ]).then(function(res){
     var ev=res[0],gs=res[1],rows=document.getElementById('rows');
-    if(!gs.length){
-      rows.innerHTML='<tr><td colspan="4" class="small" style="padding:20px">Aucun ticket.</td></tr>';
+    current=gs||[];
+    document.getElementById('master').checked=false;
+
+    if(!current.length){
+      rows.innerHTML='<tr><td colspan="5" class="small" style="padding:20px">Aucun ticket.</td></tr>';
       document.getElementById('info').textContent='0 ticket — '+esc(ev.name||'');
       return;
     }
-    document.getElementById('info').textContent=gs.length+' tickets — '+esc(ev.name||'');
-    rows.innerHTML=gs.map(function(g){
+
+    document.getElementById('info').textContent=current.length+' tickets — '+esc(ev.name||'');
+    rows.innerHTML=current.map(function(g,idx){
       var code=encodeURIComponent(g.ticket_code||'');
-      return '<tr><td>'+esc(g.prenom)+' '+esc(g.nom)+'</td><td>'+esc(g.ticket_label)+'</td><td><code>'+esc(g.ticket_code)+'</code></td><td class="actions"><a class="btn-link" target="_blank" rel="noopener" href="api.php?action=ticket_pdf&code='+code+'">PDF</a></td></tr>';
+      return '<tr>'
+        +'<td><input type="checkbox" class="ck" data-code="'+esc(g.ticket_code)+'"></td>'
+        +'<td>'+esc(g.prenom)+' '+esc(g.nom)+'</td>'
+        +'<td>'+esc(g.ticket_label)+'</td>'
+        +'<td><code>'+esc(g.ticket_code)+'</code></td>'
+        +'<td class="actions">'
+        +'<a class="btn-link" target="_blank" rel="noopener" href="api.php?action=ticket_pdf&code='+code+'">PDF</a>'
+        +'</td></tr>';
     }).join('');
   });
 }
+
+function selectedCodes(){
+  return Array.from(document.querySelectorAll('.ck:checked')).map(function(c){return c.getAttribute('data-code');});
+}
+
+function openSelectedPdf(){
+  var codes=selectedCodes();
+  if(!codes.length){alert('Selectionnez au moins un ticket.');return;}
+  var q='api.php?action=ticket_pdf&codes='+encodeURIComponent(codes.join(','));
+  window.open(q,'_blank','noopener');
+}
+
+function openAllPdf(){
+  if(!current.length){alert('Aucun ticket.');return;}
+  var codes=current.map(function(g){return g.ticket_code;});
+  var q='api.php?action=ticket_pdf&codes='+encodeURIComponent(codes.join(','));
+  window.open(q,'_blank','noopener');
+}
+
+function toggleAll(v){
+  document.querySelectorAll('.ck').forEach(function(c){c.checked=v;});
+  document.getElementById('master').checked=v;
+}
+function onMasterChange(v){toggleAll(v);}
+
 function onEventChange(){
   eid=parseInt(document.getElementById('ev-sel').value,10)||0;
   localStorage.setItem('lt_event_id',String(eid));
   load();
 }
+
 loadEvents().then(function(ok){if(ok)load();});
 </script>
 </body>
