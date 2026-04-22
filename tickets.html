@@ -79,6 +79,31 @@ function load(){
     }).join('');
   });
 }
+
+function selectedCodes(){
+  return Array.from(document.querySelectorAll('.ck:checked')).map(function(c){return c.getAttribute('data-code');});
+}
+
+function openSelectedPdf(){
+  var codes=selectedCodes();
+  if(!codes.length){alert('Selectionnez au moins un ticket.');return;}
+  var q='api.php?action=ticket_pdf&codes='+encodeURIComponent(codes.join(','));
+  window.open(q,'_blank','noopener');
+}
+
+function openAllPdf(){
+  if(!current.length){alert('Aucun ticket.');return;}
+  var codes=current.map(function(g){return g.ticket_code;});
+  var q='api.php?action=ticket_pdf&codes='+encodeURIComponent(codes.join(','));
+  window.open(q,'_blank','noopener');
+}
+
+function toggleAll(v){
+  document.querySelectorAll('.ck').forEach(function(c){c.checked=v;});
+  document.getElementById('master').checked=v;
+}
+function onMasterChange(v){toggleAll(v);}
+
 function onEventChange(){
   eid=parseInt(document.getElementById('ev-sel').value,10)||0;
   localStorage.setItem('lt_event_id',String(eid));
